@@ -1,25 +1,20 @@
-using PkgBenchmark
+using PkgBenchmark, GPUBenchmarks
 
-@benchgroup "utf8" ["string", "unicode"] begin
-    teststr = join(rand(MersenneTwister(1), 'a':'d', 10^4))
-    @bench "replace" replace($teststr, "a", "b")
-    @bench "join" join($teststr, $teststr)
-end
+benchmark_files = [
+    "blackscholes",
+]
 
-@benchgroup "trigonometry" ["math", "triangles"] begin
-    # nested groups
-    @benchgroup "circular" begin
-        for f in (sin, cos, tan)
-            for x in (0.0, pi)
-                @bench string(f), x $(f)($x)
-            end
-        end
-    end
-
-    @benchgroup "hyperbolic" begin
-        for f in (sinh, cosh, tanh)
-            for x in (0.0, pi)
-                @bench string(f), x $(f)($x)
+for file in benchmark_files
+    mod = include(file * ".jl")
+    @benchgroup file begin
+        for T in mod.types()
+            for device in GPUBenchmarks.devices()
+                if mod.is_device_supported(device)
+                    for N in mod.nrange()
+                        args = mod.setup(N, T, device)
+                        @bench "$device for $T & $N" (result = mod.execute(args...))
+                    end
+                end
             end
         end
     end
