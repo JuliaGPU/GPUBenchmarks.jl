@@ -51,10 +51,10 @@ end
 
 
 
-is_device_supported(dev) = true # should work for all!
+is_device_supported(dev) = dev != :cudanative# should work for all!
 
 nrange() = map(x-> 10^x, 1:7)
-types() = (Float32, Float64)
+types() = (Float32,)
 
 function setup(N, T, device)
     arrays = (
@@ -78,7 +78,10 @@ function execute(f, setup)
 end
 
 function teardown(setup)
-    free.(setup)
+    for elem in setup
+        free(elem)
+    end
+    gc()
     return
 end
 
