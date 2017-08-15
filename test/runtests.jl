@@ -1,5 +1,11 @@
 using GPUBenchmarks
 using Base.Test
+using PkgBenchmark
 
-# write your own tests here
-@test 1 == 2
+benchmarkpkg(
+    "GPUBenchmarks",
+    resultsdir = joinpath(@__DIR__, "..", "results"),
+    saveresults = true,
+    promptsave = false,
+    promptoverwrite = false
+)
