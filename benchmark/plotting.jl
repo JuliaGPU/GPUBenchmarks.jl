@@ -204,8 +204,11 @@ for (suitename, suite) in results
         a{0.5w} a{0.5w}
     ]
     plot(main_plot, pfirstn, plastn, layout = layout)
-    savefig(GPUBenchmarks.dir("results", "plots", suitename * ".png"))
-    img_url = github_url(true, "results", "plots", string(current_version()), suitename * ".png")
+    plotbase = GPUBenchmarks.dir("results", "plots", string(current_version()))
+    isdir(plotbase) || mkdir(plotbase)
+    pngpath = joinpath(plotbase, suitename * ".png")
+    savefig(pngpath)
+    img_url = github_url(true, pngpath)
     code_url = github_url(false, "benchmark", suitename * ".jl")
     println(md_io, "[![$suitename]($img_url)]($code_url)")
     println(md_io, "[code]($code_url)")
