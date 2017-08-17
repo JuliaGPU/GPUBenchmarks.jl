@@ -75,7 +75,6 @@ function plot_speedup!(p, position, number, color)
     annotation = text(label, 11, :white, :right)
     ps = annotation.font.pointsize
     w = (length(label) * ps) / text2pix
-    println(length(label))
     w *= 1.2
     shape = rect(-w, ps * ywidth, (position)...)
     plot!(p, shape, linewidth = 0, color = color, markerstrokewidth = 0)
@@ -143,9 +142,10 @@ end
 
 gr(size = window_size)
 
-results = save_result(results)
-results = load_result()
-
+#results = save_result(results)
+results = load_result("poincare")
+# suite = results["PDE"]
+results
 
 
 md_io = open(GPUBenchmarks.dir("results", string(current_version(), ".md")), "w")
@@ -159,7 +159,7 @@ function github_url(isimage, name...)
 end
 
 for (suitename, suite) in results
-    println(md_io, "### ", suitename)
+    println(md_io, "### ", titlecase(suitename))
     mod = include(GPUBenchmarks.dir("benchmark", suitename * ".jl"))
     println(md_io, mod.description)
 
@@ -211,6 +211,7 @@ for (suitename, suite) in results
     img_url = github_url(true, pngpath)
     code_url = github_url(false, "benchmark", suitename * ".jl")
     println(md_io, "[![$suitename]($img_url)]($code_url)")
+    println(md_io)
     println(md_io, "[code]($code_url)")
     println(md_io)
     println(md_io, "___")

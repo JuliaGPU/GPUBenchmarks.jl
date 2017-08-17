@@ -11,6 +11,7 @@ function init(device)
     if device == :cuarrays
         nothing, CuArrays.CuArray
     elseif device == :julia_base
+        FFTW.set_num_threads(1)
         nothing, Array
     elseif device == :arrayfire_cl
         ArrayFire.set_backend(ArrayFire.AF_BACKEND_OPENCL)
@@ -19,6 +20,9 @@ function init(device)
         ArrayFire.set_backend(ArrayFire.AF_BACKEND_CUDA)
         nothing, ArrayFire.AFArray
     else
+        if device == :julia
+            FFTW.set_num_threads(8)
+        end
         ctx = GPUArrays.init(device)
         ctx, GPUArray
     end
@@ -26,6 +30,7 @@ end
 
 is_cudanative(x) = x in (:cudanative, :cuarrays)
 is_arrayfire(x) = x in (:arrayfire_cl, :arrayfire_cu)
+is_gpuarrays(x) = x in (:opencl, :cudanative, :julia)
 
 synchronize(x) = GPUArrays.synchronize(x)
 
@@ -56,7 +61,7 @@ load_result(version = current_version()) = load(dir("results", "data", string(ve
 
 current_version() = v"0.0.1"
 
-export devices, init, is_cudanative, free, synchronize, save_result, load_result, is_arrayfire, current_version
+export devices, init, is_cudanative, free, synchronize, save_result, load_result, is_arrayfire, current_version, is_gpuarrays
 
 
 end # module

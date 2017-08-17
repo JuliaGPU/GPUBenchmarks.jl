@@ -1,20 +1,50 @@
-using GPUArrays
+module PDE
 
-tocomplex64(x) = Complex64(x) # cudanative doesn't like Complex64.
+using GPUBenchmarks, BenchmarkTools, Primes
 
+description = """
+PDE benchmarks!
+These are dominated by the cost of the FFT, leading to worse results for OpenCL with
+CLFFT compared to the faster CUFFT.
+Similarly the multithreaded backend doesn't improve much over base with the same FFT implementation.
+"""
+
+is_device_supported(dev) = is_gpuarrays(dev) || dev == :julia_base
+
+nrange() = map(x-> (2^x) ^ 2, 4:1:10)
+types() = (Float32,)
+
+
+
+tocomplex64(x) = Complex64(x) # cudanative doesn't like Complex64 directly broadcasted.
+
+function inner_loop(
+        nruns,
+        planv, planw, planwi, u, v, w, Â,
+        c1, c2, c3, c4
+    )
+    for n = 1:nruns
+        v .= tocomplex64.(u .* u .* u)
+        planv * v
+        planw * w
+        w .= (( (1f0 .+ c1) .* Â) .* w .- (c2 .* Â) .* v) ./ ((1f0 .+ c3 .* Â .+ c4) .* Â)
+        planwi * w
+        u .= real.(w)
+    end
+    synchronize(u)
+    return u
+end
 # source: http://nbviewer.jupyter.org/url/homepages.warwick.ac.uk/staff/C.Ortner/julia/PlaneWaves.ipynb
 # an optimised implementation of CH_vectorised!
-function CH_memory!(nruns, N, AT)
-
+function execute(N, T, device)
+    ctx, array_type = init(device)
+    N = ceil(Int, sqrt(N))
     # initialisations
-    h = Float32(2*π/N); epsn = Float32(h * 3); C = Float32(2/epsn); tau = Float32(epsn * h)
+    h = T(2*π/N); epsn = T(h * 3); C = T(2/epsn); tau = T(epsn * h)
     k = [0:N/2; -N/2+1:-1]
-    Â = AT((Float32.(kron(k.^2, ones(1,N)) + kron(ones(N), k'.^2))))
-    u = AT(Float32.((2*(rand(N, N)-0.5))))
+    Â = array_type((T.(kron(k .^ 2, ones(1, N)) + kron(ones(N), k' .^ 2))))
+    u = array_type(T.((2*(rand(N, N)-0.5))))
 
-
-    # ============= ACTUAL CODE THAT IS BEING TESTED ======================
-    # allocate arrays and define constants
     w = tocomplex64.(u)
     v = copy(w)
     c1 = (C*tau + tau/epsn)
@@ -24,20 +54,19 @@ function CH_memory!(nruns, N, AT)
     planv = plan_fft!(v)
     planw = plan_fft!(w)
     planwi = plan_ifft!(w)
-    tic()
-    for n = 1:nruns
-        v .= Complex64.(u .* u .* u)
-        planv * v
-        planw * w
-        w .= (( (1f0 + c1) .* Â) .* w .- (c2 .* Â) .* v) ./ ((1f0 + c3 .* Â .+ c4) .* Â)
-        planwi * w
-        u .= real.(w)
-    end
-    GPUArrays.synchronize(u)
-    toc()
-    # ======================================================================
-    u
+    nruns = 20
+    b = @benchmark $(inner_loop)(
+            $nruns,
+            $planv, $planw, $planwi, $u, $v, $w, $Â,
+            $c1, $c2, $c3, $c4
+    )
+    free(Â); free(u); free(v); free(w)
+    b
 end
+
+
+# execute(Float32, 512, :opencl)
+
 function CH_memory_af!(nruns, N, AT)
     # initialisations
     h = Float32(2*π/N); epsn = Float32(h * 3); C = Float32(2/epsn); tau = Float32(epsn * h)
@@ -68,11 +97,7 @@ function CH_memory_af!(nruns, N, AT)
     # ======================================================================
     u
 end
-JLBackend.init()
-using ArrayFire
-x = CH_memory_af!(100, 2^9, AFArray)
-x = complex.(AFArray(rand(Float32, 32, 32)))
-using GPUArrays
+
 
 # source: https://github.com/johnfgibson/julia-pde-benchmark/blob/master/1-Kuramoto-Sivashinksy-benchmark.ipynb
 function ksintegrate(u, Lx, dt, Nt, AT)
@@ -128,14 +153,16 @@ function ksintegrate(u, Lx, dt, Nt, AT)
     toc()
     u
 end
+#
+# Lx = Float32(64*pi)
+# Nx = 10^7
+# dt = 1/16
+# Nt = 100
+#
+# x = Lx*(0:Nx-1)/Nx
+# u = Float32.(cos.(x) + 0.1*sin.(x/8) + 0.01*cos.((2*pi/Lx)*x))
+# CLBackend.init()
+# x = ksintegrate(u, Lx, dt, 3, GPUArray)
+# GPUArrays.free(x); gc()
 
-Lx = Float32(64*pi)
-Nx = 10^7
-dt = 1/16
-Nt = 100
-
-x = Lx*(0:Nx-1)/Nx
-u = Float32.(cos.(x) + 0.1*sin.(x/8) + 0.01*cos.((2*pi/Lx)*x))
-CLBackend.init()
-x = ksintegrate(u, Lx, dt, 3, GPUArray)
-GPUArrays.free(x); gc()
+end

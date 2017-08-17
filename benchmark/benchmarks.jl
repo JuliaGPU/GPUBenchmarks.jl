@@ -1,7 +1,9 @@
 using GPUBenchmarks, BenchmarkTools, FileIO
 
 benchmark_files = [
-    "blackscholes",
+   # "blackscholes",
+   #  "PDE",
+    "poincare"
 ]
 results = Dict()
 
@@ -27,9 +29,14 @@ for file in benchmark_files
                         push!(trials, e)
                     end
                 end
+                range, trials
+                suite[device] = (range, trials)
             end
         end
-        range, trials
-        suite[device] = (range, trials)
     end
 end
+
+results_old
+results_old = load_result()
+newresult = merge(results_old, results)
+save_result(newresult)
