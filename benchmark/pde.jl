@@ -1,8 +1,9 @@
 using GPUArrays
-# an optimised implementation of CH_vectorised!
-tocomplex64(x) = Complex64(x) # cudanative doesn't like Complex64.(gpu_array)
+
+tocomplex64(x) = Complex64(x) # cudanative doesn't like Complex64.
 
 # source: http://nbviewer.jupyter.org/url/homepages.warwick.ac.uk/staff/C.Ortner/julia/PlaneWaves.ipynb
+# an optimised implementation of CH_vectorised!
 function CH_memory!(nruns, N, AT)
 
     # initialisations
@@ -16,9 +17,9 @@ function CH_memory!(nruns, N, AT)
     # allocate arrays and define constants
     w = tocomplex64.(u)
     v = copy(w)
-    c1 = (C*tau+tau/epsn)
-    c2 = (tau/epsn)
-    c3 = (epsn*tau)
+    c1 = (C*tau + tau/epsn)
+    c2 = (tau / epsn)
+    c3 = (epsn * tau)
     c4 = (C*tau)
     planv = plan_fft!(v)
     planw = plan_fft!(w)
@@ -37,10 +38,40 @@ function CH_memory!(nruns, N, AT)
     # ======================================================================
     u
 end
-CUBackend.init()
+function CH_memory_af!(nruns, N, AT)
+    # initialisations
+    h = Float32(2*π/N); epsn = Float32(h * 3); C = Float32(2/epsn); tau = Float32(epsn * h)
+    k = [0:N/2; -N/2+1:-1]
+    Â = AT((Float32.(kron(k.^2, ones(1,N)) + kron(ones(N), k'.^2))))
+    u = AT(Float32.((2*(rand(N, N)-0.5))))
 
-x = CH_memory!(100, 2^9, GPUArray)
 
+    # ============= ACTUAL CODE THAT IS BEING TESTED ======================
+    # allocate arrays and define constants
+    w = AT{Complex64}(u)
+    v = copy(w)
+    c1 = (C*tau + tau/epsn)
+    c2 = (tau / epsn)
+    c3 = (epsn * tau)
+    c4 = (C*tau)
+    tic()
+    for n = 1:nruns
+        v .= complex.(u .* u .* u)
+        v = fft(v)
+        w = fft(w)
+        w .= (( (1f0 + c1) .* Â) .* w .- (c2 .* Â) .* v) ./ ((1f0 + c3 .* Â .+ c4) .* Â)
+        w = ifft(w)
+        u .= real.(w)
+    end
+    GPUArrays.synchronize(u)
+    toc()
+    # ======================================================================
+    u
+end
+JLBackend.init()
+using ArrayFire
+x = CH_memory_af!(100, 2^9, AFArray)
+x = complex.(AFArray(rand(Float32, 32, 32)))
 using GPUArrays
 
 # source: https://github.com/johnfgibson/julia-pde-benchmark/blob/master/1-Kuramoto-Sivashinksy-benchmark.ipynb
