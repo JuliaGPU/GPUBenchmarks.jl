@@ -38,25 +38,3 @@ for file in benchmark_files
         save_result(suite, file)
     end
 end
-
-using GPUBenchmarks: @run_julia
-
-@run_julia (JULIA_NUM_THREADS = 8, "-O3", "--math-mode=fast") begin
-    include(Pkg.dir("GPUArrays", "test", "runtests.jl"))
-end
-
-using BenchmarkTools
-macro test(args)
-
-end
-@test @benchmark a .+ b
-
-@run_julia (JULIA_NUM_THREADS = 8, "-O3",  "--math-mode=fast") begin
-    using GPUBenchmarks, BenchmarkTools, FileIO
-    file = "poincare"
-    suite = Dict()
-    bench_mod = include(GPUBenchmarks.dir("benchmark", file * ".jl"))
-    for device in GPUBenchmarks.devices()
-        println(bench_mod.is_device_supported(device))
-    end
-end

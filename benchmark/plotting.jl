@@ -149,14 +149,13 @@ end
 gr(size = window_size)
 
 #results = save_result(results)
-benchmarks = filter(readdir(datapath(current_version()))) do file
+benchmarks = filter(readdir(GPUBenchmarks.datapath(current_version()))) do file
     endswith(file, ".jld")
 end
 
 
 
 md_io = open(GPUBenchmarks.dir("results", string(current_version(), ".md")), "w")
-
 
 
 for benchmark in benchmarks
@@ -211,7 +210,8 @@ for benchmark in benchmarks
     isdir(plotbase) || mkdir(plotbase)
     pngpath = joinpath(plotbase, suitename * ".png")
     savefig(pngpath)
-    img_url = github_url(true, pngpath)
+    println(pngpath)
+    img_url = github_url(true, split(pngpath, Base.Filesystem.path_separator)[end-3:end]...)
     code_url = github_url(false, "benchmark", suitename * ".jl")
     println(md_io, "[![$suitename]($img_url)]($code_url)")
     println(md_io)

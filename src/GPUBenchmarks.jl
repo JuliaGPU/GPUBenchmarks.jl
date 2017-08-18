@@ -51,14 +51,14 @@ free(x) = finalize(x)
 free(x::GPUArray) = GPUArrays.free(x)
 
 
-dir(paths...) = joinpath(@__DIR__, "..", paths...)
+dir(paths...) = normpath(joinpath(@__DIR__, "..", paths...))
 
 datapath(version, names...) = dir("results", "data", string(version), names...)
 function datapath!(version, names...)
     full_path = datapath(version, names...)
     dirpath = dirname(full_path)
     isdir(dirpath) || mkdir(dirpath)
-    full_path
+    normpath(full_path)
 end
 function save_result(result, name, version = current_version())
     save(datapath!(version, name * ".jld"), result)
@@ -118,7 +118,6 @@ macro run_julia(args, expr)
     end
     expr.args = new_args
     str = string(expr)
-    println(str)
     command = `julia6 $(julia_args...) -e $str`
     quote
         withenv($(esc(envs...))) do
