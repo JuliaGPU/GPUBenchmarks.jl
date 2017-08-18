@@ -135,21 +135,6 @@ function plot_legend(title, benchset, label_colors, size)
     plot_benchset(p, position, wstart, benchset, label_colors, speed_cmap)
     p
 end
-
-
-##########################################
-# plotting code
-
-gr(size = window_size)
-
-#results = save_result(results)
-results = load_result("poincare")
-# suite = results["PDE"]
-results
-
-
-md_io = open(GPUBenchmarks.dir("results", string(current_version(), ".md")), "w")
-
 function github_url(isimage, name...)
     joinpath(
         "https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/",
@@ -158,7 +143,25 @@ function github_url(isimage, name...)
     )
 end
 
-for (suitename, suite) in results
+##########################################
+# plotting code
+
+gr(size = window_size)
+
+#results = save_result(results)
+benchmarks = filter(readdir(datapath(current_version()))) do file
+    endswith(file, ".jld")
+end
+
+
+
+md_io = open(GPUBenchmarks.dir("results", string(current_version(), ".md")), "w")
+
+
+
+for benchmark in benchmarks
+    suitename, ext = splitext(benchmark)
+    suite = load(GPUBenchmarks.datapath(current_version(), benchmark))
     println(md_io, "### ", titlecase(suitename))
     mod = include(GPUBenchmarks.dir("benchmark", suitename * ".jl"))
     println(md_io, mod.description)
@@ -218,4 +221,3 @@ for (suitename, suite) in results
     println(md_io)
 end
 close(md_io)
-using FileIO

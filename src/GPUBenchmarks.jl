@@ -53,15 +53,84 @@ free(x::GPUArray) = GPUArrays.free(x)
 
 dir(paths...) = joinpath(@__DIR__, "..", paths...)
 
-function save_result(result, version = current_version())
-    save(dir("results", "data", string(version, ".jld")), result)
+datapath(version, names...) = dir("results", "data", string(version), names...)
+function datapath!(version, names...)
+    full_path = datapath(version, names...)
+    dirpath = dirname(full_path)
+    isdir(dirpath) || mkdir(dirpath)
+    full_path
+end
+function save_result(result, name, version = current_version())
+    save(datapath!(version, name * ".jld"), result)
 end
 
-load_result(version = current_version()) = load(dir("results", "data", string(version, ".jld")))
 
+load_result(name, version = current_version()) = load(datapath(version, name * ".jld"))
+
+function load_results(version = current_version())
+    files = filter(readdir(datapath(version))) do x
+        endswith(x, ".jld")
+    end
+    Dict(map(files) do file
+        result = load(file)
+        name, ext = splitext(file)
+        name = basename(name)
+        name => result
+    end)
+end
 current_version() = v"0.0.1"
+"""
+Runs a script in a new julia process.
+Usage:
+```
+@run_julia (JULIA_NUM_THREADS = 8, "-O3",  "--math-mode=fast") begin
+    println(Threads.nthreads())
+end
+```
+"""
+macro run_julia(args, expr)
+    envs = []
+    julia_args = []
+    if isa(args, Expr) && args.head == :tuple
+        for elem in args.args
+            if isa(elem, String)
+                push!(julia_args, elem)
+            elseif isa(elem, Expr) && elem.head == :(=)
+                key, value = elem.args
+                push!(envs, string(key) => value)
+            else
+                error("Unsupported argument: $elem")
+            end
+        end
+    else
+        error("Unsupported expression for args $args")
+    end
+
+    new_args = []
+    for arg in expr.args
+        if isa(arg, Expr) && arg.head == :toplevel
+            for toplevel in arg.args
+                push!(new_args, toplevel)
+            end
+        else
+            push!(new_args, arg)
+        end
+    end
+    expr.args = new_args
+    str = string(expr)
+    println(str)
+    command = `julia6 $(julia_args...) -e $str`
+    quote
+        withenv($(esc(envs...))) do
+            run($command)
+        end
+    end
+end
+
+
 
 export devices, init, is_cudanative, free, synchronize, save_result, load_result, is_arrayfire, current_version, is_gpuarrays
+export @run_julia, datadir
 
 
 end # module

@@ -1,42 +1,62 @@
 using GPUBenchmarks, BenchmarkTools, FileIO
 
 benchmark_files = [
-   # "blackscholes",
-   #  "PDE",
+    "blackscholes",
+    "PDE",
     "poincare"
 ]
-results = Dict()
 
 for file in benchmark_files
-    suite = Dict()
-    results[file] = suite
-    mod = include(GPUBenchmarks.dir("benchmark", file * ".jl"))
-    for device in GPUBenchmarks.devices()
-        range = Float64[]
-        trials = []
-        for T in mod.types()
-            if mod.is_device_supported(device)
-                for N in mod.nrange()
-                    println("Benchmarking $N $T $device")
-                    try
-                        b = mod.execute(N, T, device)
-                        push!(range, N)
-                        push!(trials, b)
-                    catch e
-                        warn(e)
-                        Base.show_backtrace(STDERR, backtrace())
-                        push!(range, N)
-                        push!(trials, e)
+    @run_julia (JULIA_NUM_THREADS = 8, "-O3",  "--math-mode=fast") begin
+        using GPUBenchmarks, BenchmarkTools, FileIO
+        file = "blackscholes"
+        suite = Dict()
+        bench_mod = include(GPUBenchmarks.dir("benchmark", file * ".jl"))
+        for device in GPUBenchmarks.devices()
+            range = Float64[]
+            trials = []
+            for T in bench_mod.types()
+                if bench_mod.is_device_supported(device)
+                    for N in bench_mod.nrange()
+                        println("Benchmarking $N $T $device")
+                        try
+                            b = bench_mod.execute(N, T, device)
+                            push!(range, N)
+                            push!(trials, b)
+                        catch e
+                            warn(e)
+                            Base.show_backtrace(STDERR, backtrace())
+                            push!(range, N)
+                            push!(trials, e)
+                        end
                     end
+                    range, trials
+                    suite[string(device)] = (range, trials)
                 end
-                range, trials
-                suite[device] = (range, trials)
             end
         end
+        save_result(suite, file)
     end
 end
 
-results_old
-results_old = load_result()
-newresult = merge(results_old, results)
-save_result(newresult)
+using GPUBenchmarks: @run_julia
+
+@run_julia (JULIA_NUM_THREADS = 8, "-O3", "--math-mode=fast") begin
+    include(Pkg.dir("GPUArrays", "test", "runtests.jl"))
+end
+
+using BenchmarkTools
+macro test(args)
+
+end
+@test @benchmark a .+ b
+
+@run_julia (JULIA_NUM_THREADS = 8, "-O3",  "--math-mode=fast") begin
+    using GPUBenchmarks, BenchmarkTools, FileIO
+    file = "poincare"
+    suite = Dict()
+    bench_mod = include(GPUBenchmarks.dir("benchmark", file * ".jl"))
+    for device in GPUBenchmarks.devices()
+        println(bench_mod.is_device_supported(device))
+    end
+end
