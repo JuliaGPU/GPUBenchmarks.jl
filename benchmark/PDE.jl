@@ -3,8 +3,7 @@ module PDE
 using GPUBenchmarks, BenchmarkTools, Primes
 
 description = """
-PDE benchmarks!
-These are dominated by the cost of the FFT, leading to worse results for OpenCL with
+This benchmark is dominated by the cost of the FFT, leading to worse results for OpenCL with
 CLFFT compared to the faster CUFFT.
 Similarly the multithreaded backend doesn't improve much over base with the same FFT implementation.
 """
@@ -13,7 +12,6 @@ is_device_supported(dev) = is_gpuarrays(dev) || dev == :julia_base
 
 nrange() = map(x-> (2^x) ^ 2, 4:1:10)
 types() = (Float32,)
-
 
 
 tocomplex64(x) = Complex64(x) # cudanative doesn't like Complex64 directly broadcasted.

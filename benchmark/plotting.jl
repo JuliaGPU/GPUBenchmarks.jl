@@ -8,26 +8,26 @@ missing_val = 0.0 + eps(Float64)
 text2pix = 0.95
 ywidth = 3.0
 window_size = (800, 500)
-nice_colors = shuffle(map([
-    (0,  31,  63), # Navy
+nice_colors = map([
     (0, 116, 217), # Blue
     (127, 219, 255), # Aqua
-    (57, 204, 204), # Teal
-    (61, 153, 112), # Olive
-    (1, 255, 112), # Lime
-    (46, 204,  64), # Green
-    (255, 220,   0), # Yellow
-    (255, 133,  27), # Orange
-    (255,  65,  54), # Red
     (133,  20,  75), # Maroon
     (240,  18, 190), # Fuchsia
+    (46, 204,  64), # Green
     (177,  13, 201), # Purple
+    (57, 204, 204), # Teal
+    (61, 153, 112), # Olive
+    (255, 220,   0), # Yellow
+    (255,  65,  54), # Red
+    (1, 255, 112), # Lime
+    (255, 133,  27), # Orange
+    (0,  31,  63), # Navy
+    (221, 221, 221), # Silver
     (17,  17,  17), # Black
     (170, 170, 170), # Gray
-    (221, 221, 221) # Silver
 ]) do x
     RGB(map(v-> v / 255, x)...)
-end)
+end
 
 #######################
 # helpers

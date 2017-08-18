@@ -6,7 +6,6 @@ import CUDAnative
 const cu = CUDAnative
 description = """
 Poincare section of a chaotic neuronal network
-
 """
 
 # Original poincare implementation by https://github.com/RainerEngelken

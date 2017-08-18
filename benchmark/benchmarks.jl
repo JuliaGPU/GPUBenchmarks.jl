@@ -6,10 +6,10 @@ benchmark_files = [
     "poincare"
 ]
 
-for file in benchmark_files
+# for file in benchmark_files
     @run_julia (JULIA_NUM_THREADS = 8, "-O3",  "--math-mode=fast") begin
         using GPUBenchmarks, BenchmarkTools, FileIO
-        file = "blackscholes"
+        file = "juliaset"
         suite = Dict()
         bench_mod = include(GPUBenchmarks.dir("benchmark", file * ".jl"))
         for device in GPUBenchmarks.devices()
@@ -35,6 +35,10 @@ for file in benchmark_files
                 end
             end
         end
+        # JLD is a bit brittle, so lets just in case save it with serializer
+        open(GPUBenchmarks.datapath!(current_version(), file * ".jls"), "w") do io
+            serialize(io, suite)
+        end
         save_result(suite, file)
     end
-end
+# end

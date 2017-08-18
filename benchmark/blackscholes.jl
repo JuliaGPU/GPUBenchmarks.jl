@@ -7,7 +7,9 @@ using CUDAnative
 const cu = CUDAnative
 
 const description = """
-This is the famous Blackscholes benchmark, yeah!
+Blackschole is a nice benchmark for broadcasting performance.
+It's a medium heavy calculation per array element, where the calculation is completely
+independant from each other.
 """
 
 function blackscholes(
@@ -90,7 +92,6 @@ end
 end
 
 function execute(N, T, device)
-
     ctx, array_type = init(device)
     jl_arrays = (
         zeros(T, N),

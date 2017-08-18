@@ -129,7 +129,7 @@ end
 
 
 export devices, init, is_cudanative, free, synchronize, save_result, load_result, is_arrayfire, current_version, is_gpuarrays
-export @run_julia, datadir
+export @run_julia, datapath
 
 
 end # module
