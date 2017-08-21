@@ -91,6 +91,7 @@ end
 macro run_julia(args, expr)
     envs = []
     julia_args = []
+    variables = []
     if isa(args, Expr) && args.head == :tuple
         for elem in args.args
             if isa(elem, String)
@@ -120,6 +121,7 @@ macro run_julia(args, expr)
     str = string(expr)
     command = `julia6 $(julia_args...) -e $str`
     quote
+
         withenv($(esc(envs...))) do
             run($command)
         end

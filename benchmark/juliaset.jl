@@ -6,26 +6,9 @@ using ArrayFire: @afgc
 
 description = """
 julia set benchmark
-generated functions allow you to emit specialized code for the argument types.
 """
 
-@generated function juliaset_unrolled{N}(z, maxiter::Val{N})
-    unrolled = Expr(:block)
-    for i=1:N
-        push!(unrolled.args, quote
-            abs2(z2) > 4f0 && return UInt8($(i-1))
-            z2 = z2 * z2 + c
-        end)
-    end
-    quote
-        c = Complex64(-0.5, 0.75)
-        z2 = z
-        $unrolled
-        return UInt8($N)
-    end
-end
-# Somehow CuArrays broadcast doesn't support res .= juliaset_unrolled(q, Val{50}())
-juliaset_50(z) = juliaset_unrolled(z, Val{50}())
+
 function juliaset(z0, maxiter)
     c = Complex64(-0.5, 0.75)
     z = z0
@@ -37,10 +20,12 @@ function juliaset(z0, maxiter)
 end
 
 @afgc function juliaset_af(z0, count, maxiter)
+    fill!(count, 1)
     z = z0
+    c = Complex64(-0.5, 0.75)
     for n in 1:maxiter
-        z = z .* z .+ Complex64(-0.5, 0.75)
-        count .= count .+ (abs2(z) <= 4)
+        z = z .* z .+ c
+        count .= count .+ (abs2.(z) .<= 4)
     end
     count
 end
@@ -51,7 +36,7 @@ end
 
 nrange() = map(x-> (2^x) ^ 2, 6:1:12)
 types() = (Float32,)
-is_device_supported(dev) = true
+is_device_supported(dev) = !is_arrayfire(dev)
 
 function execute(N, T, device)
     ctx, array_type = init(device)
@@ -63,16 +48,27 @@ function execute(N, T, device)
 
     q_gpu = array_type(q)
     result_gpu = array_type(zeros(UInt8, size(q_gpu)))
+    jl_result = zeros(UInt8, size(q_gpu))
+    jl_result .= juliaset.(q, 50)
+
     bench = if is_arrayfire(device)
-        @benchmark $(juliaset_af)($q_gpu, $result_gpu, 50)
-        ArrayFire.afgc()
+        @benchmark begin
+            $(juliaset_af)($q_gpu, $result_gpu, 50)
+            synchronize($result_gpu)
+            ArrayFire.afgc()
+        end
     else
-        @benchmark ($(result_gpu) .= $(juliaset_50).($q_gpu))
+        @benchmark begin
+            $(result_gpu) .= $(juliaset).($q_gpu, 50)
+            synchronize($result_gpu)
+        end
     end
+    @assert(count(x-> !x, jl_result .≈ Array(result_gpu)) < N / 40, "backend $device yielded different result")
+
     free(q_gpu); free(result_gpu);
     gc()
     return bench
 end
-
+execute(4096, Float32, :opencl)
 
 end
