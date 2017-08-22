@@ -273,7 +273,7 @@ for code_path in codepaths
             a{0.5h}
             a{0.5w} a{0.5w}
         ]
-        plot(main_plot)
+        plot(main_plot, size = window_size ./ (1, 2))
         plotbase = GPUBenchmarks.dir("results", "plots")
         isdir(plotbase) || mkdir(plotbase)
         pngpath = joinpath(plotbase, suitename * ".png")
