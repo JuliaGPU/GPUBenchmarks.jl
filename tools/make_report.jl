@@ -161,6 +161,7 @@ Please treat all numbers with care and open issues if numbers seem off.
 If you have suggestions or improvements, please go ahead and open a PR with this repository.
 
 Packages benchmarked:
+
 [CuArrays](https://github.com/FluxML/CuArrays.jl) appears as: **cuarrays**
 
 [ArrayFire](https://github.com/gaika/ArrayFire.jl) appears as: **arrayfire cl**, **arrayfire cu**
