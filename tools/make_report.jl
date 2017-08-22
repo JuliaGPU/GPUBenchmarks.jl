@@ -162,12 +162,16 @@ If you have suggestions or improvements, please go ahead and open a PR with this
 
 Packages benchmarked:
 [CuArrays](https://github.com/FluxML/CuArrays.jl) appears as: **cuarrays**
+
 [ArrayFire](https://github.com/gaika/ArrayFire.jl) appears as: **arrayfire cl**, **arrayfire cu**
+
 [GPUArrays](https://github.com/JuliaGPU/GPUArrays.jl) appears as: **opencl**, **cudanative** and **julia** for a multi threaded backend
+
 Julia Base Arrays appear as: **julia base**
 
-Hardware used for GPU: GTX 950
-Hardware used for Julia single and multithreaded backends: Intel® Core™ i7-6700 CPU @ 3.40GHz × 4
+Hardware used for GPU: **GTX 950**
+
+Hardware used for Julia single and multithreaded backends: **Intel® Core™ i7-6700 CPU @ 3.40GHz × 4**
 
 ---
 
