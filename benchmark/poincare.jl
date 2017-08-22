@@ -9,7 +9,7 @@ Poincare section of a chaotic neuronal network.
 The domination of OpenCL in this benchmark might be due to a better use of vector intrinsics in Transpiler.jl, but needs some
 more investigations.
 Result of calculation:
-![]("https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/poincare_result.png?raw=true")
+![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/poincare_result.png?raw=true)
 """
 
 # Original poincare implementation by https://github.com/RainerEngelken

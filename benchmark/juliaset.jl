@@ -10,7 +10,7 @@ The unrolled benchmark uses generated functions to emit an unrolled version of t
 This currently doesn't yield a speed up, but was quite a bit faster in the initial tests.
 Needs some further research of why this slowed down - Potentially an N == 16 for the inner iteration is too big.
 Image of the benchmarked juliaset:
-![]("https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/juliaset_result.png?raw=true")
+![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/juliaset_result.png?raw=true)
 """
 
 

@@ -155,58 +155,64 @@ md_io = open(GPUBenchmarks.dir("results", string("results.md")), "w")
 
 # most_current = filter(x-> x.timestamp == GPUBenchmarks.last_time_stamp(), GPUBenchmarks.get_database())
 most_current = GPUBenchmarks.get_database()
-suites = unique(map(x-> x.name, most_current))
-for suitename in suites
-    suite = filter(x-> x.name == suitename, most_current)
-    println(md_io, "### ", titlecase(suitename))
-    code_path = first(suite).codepath
+using GPUBenchmarks: codepath, name
+codepaths = unique(codepath.(most_current))
+for code_path in codepaths
+    suites = unique(name.(filter(x-> codepath(x) == code_path, most_current)))
     mod = include(code_path)
-    println(md_io, mod.description)
-    i = 1
-    legend_colors = Dict()
-    main_plot = plot(
-        xaxis = ("Problem size N", :log10), yaxis = ("Time in Seconds", :log10),
-        legend = false,
-        markerstrokewidth = 0,
-    );
-    devices = unique(map(x-> x.device, suite))
-    benchset_firstn = []
-    benchset_lastn = []
-    for device in devices
-        device_benches = sort(filter(x-> x.device == device, suite), by = (x)-> x.N)
-        times, Ns = map(x-> x.benchmark, device_benches), map(x-> x.N, device_benches)
-        meandiff = map(x-> x.meandiffrence, device_benches) .* 3000.0
-        judged_push!(benchset_firstn, first(times), device)
-        judged_push!(benchset_lastn, last(times), device)
-        times = get_time.(times)
-        color = nice_colors[i]
-        legend_colors[device] = color
-        error_cmap = linspace(colorant"#E53A15", colorant"#AAE500", length(Ns))
-        plot!(main_plot, Ns, times, m = (error_cmap, 0.4, stroke(2, color)), ms = meandiff)
-        plot!(main_plot, Ns, times, line = (2, color))
-        i += 1
-    end
-    pfirstn = plot_legend("N = 10^1", benchset_firstn, legend_colors, window_size)
-    plastn = plot_legend("N = 10^7", benchset_lastn, legend_colors, window_size)
-
-    layout = @layout [
-        a{0.5h}
-        a{0.5w} a{0.5w}
-    ]
-    plot(main_plot, pfirstn, plastn, layout = layout)
-    plotbase = GPUBenchmarks.dir("results", "plots")
-    isdir(plotbase) || mkdir(plotbase)
-    pngpath = joinpath(plotbase, suitename * ".png")
-    savefig(pngpath)
-    println(pngpath)
-    img_url = github_url(true, split(pngpath, Base.Filesystem.path_separator)[end-2:end]...)
     jl_name = basename(code_path)
-    code_url = github_url(false, "benchmark", jl_name)
-    println(md_io, "[![$suitename]($img_url)]($code_url)")
-    println(md_io)
-    println(md_io, "[code]($code_url)")
-    println(md_io)
-    println(md_io, "___")
-    println(md_io)
+    file_name, ext = splitext(jl_name)
+    println(md_io, "### ", titlecase(file_name))
+    println(md_io, mod.description)
+    for suitename in suites
+        suite = filter(x-> name(x) == suitename, most_current)
+        println(md_io, "#### ", titlecase(suitename))
+        i = 1
+        legend_colors = Dict()
+        main_plot = plot(
+            xaxis = ("Problem size N", :log10), yaxis = ("Time in Seconds", :log10),
+            legend = false,
+            markerstrokewidth = 0,
+        );
+        devices = unique(map(x-> x.device, suite))
+        benchset_firstn = []
+        benchset_lastn = []
+        for device in devices
+            device_benches = sort(filter(x-> x.device == device, suite), by = (x)-> x.N)
+            times, Ns = map(x-> x.benchmark, device_benches), map(x-> x.N, device_benches)
+            meandiff = map(x-> x.meandiffrence, device_benches) .* 3000.0
+            judged_push!(benchset_firstn, first(times), device)
+            judged_push!(benchset_lastn, last(times), device)
+            times = get_time.(times)
+            color = nice_colors[i]
+            legend_colors[device] = color
+            error_cmap = linspace(colorant"#E53A15", colorant"#AAE500", length(Ns))
+            plot!(main_plot, Ns, times, m = (error_cmap, 0.4, stroke(2, color)), ms = meandiff)
+            plot!(main_plot, Ns, times, line = (2, color))
+            i += 1
+        end
+        pfirstn = plot_legend("N = 10^1", benchset_firstn, legend_colors, window_size)
+        plastn = plot_legend("N = 10^7", benchset_lastn, legend_colors, window_size)
+
+        layout = @layout [
+            a{0.5h}
+            a{0.5w} a{0.5w}
+        ]
+        plot(main_plot, pfirstn, plastn, layout = layout)
+        plotbase = GPUBenchmarks.dir("results", "plots")
+        isdir(plotbase) || mkdir(plotbase)
+        pngpath = joinpath(plotbase, suitename * ".png")
+        savefig(pngpath)
+        println(pngpath)
+        img_url = github_url(true, split(pngpath, Base.Filesystem.path_separator)[end-2:end]...)
+
+        code_url = github_url(false, "benchmark", jl_name)
+        println(md_io, "[![$suitename]($img_url)]($code_url)")
+        println(md_io)
+        println(md_io, "[code]($code_url)")
+        println(md_io)
+        println(md_io, "___")
+        println(md_io)
+    end
 end
 close(md_io)

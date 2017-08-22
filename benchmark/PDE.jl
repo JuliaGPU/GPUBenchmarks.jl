@@ -9,7 +9,7 @@ This benchmark is dominated by the cost of the FFT, leading to worse results for
 CLFFT compared to the faster CUFFT.
 Similarly the multithreaded backend doesn't improve much over base with the same FFT implementation.
 Result of the benchmarked PDE:
-![]("https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/pde_result.png?raw=true")
+![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/pde_result.png?raw=true)
 """
 
 
