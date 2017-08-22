@@ -5,8 +5,8 @@ using GPUBenchmarks, Plots, Colors, BenchmarkTools
 
 # lol we can't just use 0.0, because Plots.jl errors then
 missing_val = 0.0 + eps(Float64)
-text2pix = 0.95
-ywidth = 3.0
+text2pix = 1.0
+ywidth = 2.5
 window_size = (800, 500)
 
 
@@ -72,44 +72,29 @@ function speedup!(benchset)
 end
 
 rect(w, h, x, y) = Shape(x + [0,w,w,0], y + [0,0,h,h])
-function plot_speedup!(p, position, number, color)
-    label = @sprintf("%4.2fx", number)
-    annotation = text(label, 11, RGB(0.2, 0.2, 0.2), :right)
+function plot_speedup!(p, position, label, color)
+    annotation = text(label, 9, RGB(0.2, 0.2, 0.2), :right, "helvetica")
     ps = annotation.font.pointsize
-    w = (length(label) * ps) / text2pix
-    w *= 1.2
+    w = (10 * ps) / text2pix
     shape = rect(-w, ps * ywidth, (position)...)
     plot!(p, shape, linewidth = 0, linecolor = RGBA(0,0,0,0), color = color, m = (color, stroke(0)))
-    annotate!(p, [((position .+ (-4, 15text2pix))..., annotation)])
+    annotate!(p, [((position .+ (-4, 10text2pix))..., annotation)])
     position .- (w + (5 * text2pix), 0)
 end
 
 function plot_label!(p, position, label, color)
-    label_str = if label == "julia"
-        "4cores 8threads" # be more descriptive
-    else
-        replace(string(label), "_", " ")
-    end
-    labeltext = text(label_str, 11, :black, :right)
-    ps = labeltext.font.pointsize
-    w = (length(label_str) * ps) / text2pix
-    shape = rect(10, ps * ywidth, (position .- (12, 0))...)
+    shape = rect(10, 9 * ywidth, (position .- (12, 0))...)
     plot!(p, shape, linewidth = 0, color = color, linecolor = RGBA(1,1,1,0.2))
-
-    shape = rect(-w, ps * ywidth, (position .- (17, 0))...)
-    plot!(
-        p, shape, linewidth = 1, m = (0, color),
-        linecolor = color, color = RGBA(1, 1, 1, 0)
-    )
-    annotate!(p, [((position .+ (-23, 15text2pix))..., labeltext)])
-    position .- (w + (25text2pix), 0)
+    position .- ((15text2pix), 0)
 end
 
 function plot_benchset(p, position, wstart, benchset, label_colors, speed_cmap)
     speedups = speedup!(benchset)
-    iterator = (zip(reverse(speedups), speed_cmap, reverse(benchset)))
-    for (speedup, scolor, benches) in iterator
-        position = plot_speedup!(p, position, speedup, scolor)
+    abs_times = map(x-> minimum(x[1][2]).time, benchset)
+    iterator = zip(reverse(speedups), speed_cmap, reverse(benchset), reverse(abs_times))
+    for (speedup, scolor, benches, abs_time) in iterator
+        position = plot_speedup!(p, position, prettytime(abs_time), scolor)
+        position = plot_speedup!(p, position, @sprintf("%8.1fx", speedup), scolor)
         for (name, bench) in benches
             position = plot_label!(p, position, name, label_colors[name])
         end
@@ -118,24 +103,40 @@ function plot_benchset(p, position, wstart, benchset, label_colors, speed_cmap)
     position
 end
 
-function plot_legend(title, benchset, label_colors, size)
+function plot_legend(name, benchsetsn, benchsets, label_colors, size)
     pad = 5
-    width, height = size .* 0.5
-
+    width, height = size .* (0.3, 0.5)
     wstart = width - pad
     position = (wstart, 0)
-    p = plot(
-        title = title,
-        xlims = (0, width), ylims = (0, height),
-        legend = false,
-        grid = false,
-        axis = false,
-        aspect_ratio = 1,
-        markerstrokewidth = 0,
-    )
-    speed_cmap = linspace(RGBA(colorant"#E53A15", 0.6), RGBA(colorant"#AAE500", 0.3), length(benchset))
-    plot_benchset(p, position, wstart, benchset, label_colors, speed_cmap)
-    p
+    str = IOBuffer()
+    print(str, "|")
+    for n in benchsetsn
+        print(str, " ", get_log_n(n), " |")
+    end
+    print(str, "\n|")
+    for n in benchsetsn
+        print(str, " --- |")
+    end
+    print(str, "\n|")
+    for (i, (n, benchset)) in enumerate(zip(benchsetsn, benchsets))
+        p = plot(
+            xlims = (0, width), ylims = (0, height),
+            legend = false,
+            grid = false,
+            axis = false,
+            margin = 0,
+            bottom_margin = 0,
+            aspect_ratio = 1,
+            markerstrokewidth = 0,
+            size = (width, height)
+        )
+        speed_cmap = linspace(RGBA(colorant"#E53A15", 0.6), RGBA(colorant"#AAE500", 0.3), length(benchset))
+        plot_benchset(p, position, wstart, benchset, label_colors, speed_cmap)
+        path = ("results", "plots", "speedups",  string(name, i, ".png"))
+        savefig(GPUBenchmarks.dir(path...))
+        print(str, " ![](", github_url(true, path...), ") |")
+    end
+    String(take!(str))
 end
 function github_url(isimage, name...)
     str = joinpath(
@@ -195,14 +196,28 @@ function prettytime(t)
     if t < 1e3
         value, units = t, "ns"
     elseif t < 1e6
-        value, units = t / 1e3, "μs"
+        value, units = t / 1e3, "\\mus"
     elseif t < 1e9
         value, units = t / 1e6, "ms"
     else
         value, units = t / 1e9, "s"
     end
-    return string(@sprintf("%.3f", value), " ", units)
+    return string(@sprintf("%8.1f", round(value, 1)), units)
 end
+function device_label(device)
+    # TODO rename devices in GPUArrays and GPUBenchmarks
+    str = replace(string(device), "_", " ")
+    if device == "opencl"
+        "gpuarrays cl"
+    elseif device == "cudanative"
+        "gpuarrays cudanative"
+    elseif device == "julia"
+        "gpuarrays threaded"
+    else
+        str
+    end
+end
+
 
 # most_current = filter(x-> x.timestamp == GPUBenchmarks.last_time_stamp(), GPUBenchmarks.get_database())
 most_current = GPUBenchmarks.get_database()
@@ -221,40 +236,50 @@ for code_path in codepaths
         i = 1
         legend_colors = Dict()
         main_plot = plot(
-            xaxis = ("Problem size N", :log10), yaxis = ("Time in Seconds", :log10),
-            legend = false,
+            xaxis = ("Problem size N", :log10), yaxis = "Speedup",
+            legend = :topleft,
+            background_color_legend = RGBA(1, 1, 1, 0.6),
+            top_margin = 0,
             foreground_color_grid = RGB(0.6, 0.6, 0.6),
             axiscolor = RGB(0.2, 0.2, 0.2),
             markerstrokewidth = 0,
         );
         devices = unique(map(x-> x.device, suite))
         benchset_firstn = []
+        benchset_middle = []
         benchset_lastn = []
-        Ns = Float64[]
+        baseline = sort(filter(x-> x.device == "julia_base", suite), by = (x)-> x.N)
+        base_times, Ns = map(x-> x.benchmark, baseline), map(x-> x.N, baseline)
+        benchset_ns = [Ns[1], Ns[length(Ns) ÷ 2], Ns[end]]
+        base_times = get_time.(base_times)
         for device in devices
             device_benches = sort(filter(x-> x.device == device, suite), by = (x)-> x.N)
             times, Ns = map(x-> x.benchmark, device_benches), map(x-> x.N, device_benches)
             meandiff = map(x-> x.meandiffrence, device_benches) .* 3000.0
             judged_push!(benchset_firstn, first(times), device)
+            judged_push!(benchset_middle, times[length(times) ÷ 2], device)
             judged_push!(benchset_lastn, last(times), device)
-            times = get_time.(times)
+            times = base_times ./ get_time.(times)
             color = nice_colors[i]
             legend_colors[device] = color
             error_cmap = linspace(colorant"#E53A15", colorant"#AAE500", length(Ns))
-            plot!(main_plot, Ns, times, line = (1, 0.4, color), m = (color, 5, stroke(0)))
+            plot!(main_plot, Ns, times, line = (1, 0.4, color), m = (color, 5, stroke(0)), label = device_label(device))
             i += 1
         end
-        pfirstn = plot_legend("Speedup for N = $(get_log_n(Ns[1]))", benchset_firstn, legend_colors, window_size)
-        plastn = plot_legend("Speedup for N = $(get_log_n(Ns[end]))", benchset_lastn, legend_colors, window_size)
-
+        benchsets = [benchset_firstn, benchset_middle, benchset_lastn]
+        legend_str = plot_legend(suitename, benchset_ns, benchsets, legend_colors, window_size)
+        println(md_io)
+        println(md_io, legend_str)
+        println(md_io)
         layout = @layout [
             a{0.5h}
             a{0.5w} a{0.5w}
         ]
-        plot(main_plot, pfirstn, plastn, layout = layout)
+        plot(main_plot)
         plotbase = GPUBenchmarks.dir("results", "plots")
         isdir(plotbase) || mkdir(plotbase)
         pngpath = joinpath(plotbase, suitename * ".png")
+        println(pngpath)
         savefig(pngpath)
         println(pngpath)
         img_url = github_url(true, split(pngpath, Base.Filesystem.path_separator)[end-2:end]...)
