@@ -1,30 +1,50 @@
 module GPUBenchmarks
 
-using GPUArrays, CUDAdrv, FileIO
-import CuArrays, ArrayFire
+using GPUArrays, CUDAdrv, FileIO, BenchmarkTools
+import CuArrays, ArrayFire, CUDAnative, CUDAdrv, OpenCL
 
 function devices()
     (GPUArrays.supported_backends()..., :cuarrays, :arrayfire_cl, :arrayfire_cu, :julia_base)
 end
 
+function normit(x, mini, maxi)
+    width = (maxi - mini)
+    width == 0 && return x
+    (x .- mini) ./ width
+end
+
+function meandifference(juliabaseline, gpuarray)
+    mini, maxi = extrema(juliabaseline)
+    normed1 = normit(juliabaseline, mini, maxi)
+    normed2 = normit(Array(gpuarray), mini, maxi)
+    mean(abs.(normed1 .- normed2))
+end
+
 function init(device)
     if device == :cuarrays
-        nothing, CuArrays.CuArray
+        # cuarrays uses the default device 0
+        CUDAdrv.name(CUDAnative.CuDevice(0)), CuArrays.CuArray
     elseif device == :julia_base
         FFTW.set_num_threads(1)
-        nothing, Array
+        Sys.cpu_info()[1].model, Array
     elseif device == :arrayfire_cl
         ArrayFire.set_backend(ArrayFire.AF_BACKEND_OPENCL)
-        nothing, ArrayFire.AFArray
+        gpu_devices = first(OpenCL.cl.devices(:gpu))
+        replace(gpu_devices[:name], r"\s+", " "), ArrayFire.AFArray
     elseif device == :arrayfire_cu
         ArrayFire.set_backend(ArrayFire.AF_BACKEND_CUDA)
-        nothing, ArrayFire.AFArray
+        CUDAdrv.name(CUDAnative.CuDevice(ArrayFire.get_device())), ArrayFire.AFArray
     else
-        if device == :julia
-            FFTW.set_num_threads(8)
-        end
         ctx = GPUArrays.init(device)
-        ctx, GPUArray
+        hardware = if device == :cudanative
+            CUDAdrv.name(ctx.device)
+        elseif device == :opencl
+            replace(ctx.device[:name], r"\s+", " ")
+        elseif device == :julia
+            FFTW.set_num_threads(8)
+            Sys.cpu_info()[1].model
+        end
+        hardware, GPUArray
     end
 end
 
@@ -53,32 +73,7 @@ free(x::GPUArray) = GPUArrays.free(x)
 
 dir(paths...) = normpath(joinpath(@__DIR__, "..", paths...))
 
-datapath(version, names...) = dir("results", "data", string(version), names...)
-function datapath!(version, names...)
-    full_path = datapath(version, names...)
-    dirpath = dirname(full_path)
-    isdir(dirpath) || mkdir(dirpath)
-    normpath(full_path)
-end
-function save_result(result, name, version = current_version())
-    save(datapath!(version, name * ".jld"), result)
-end
 
-
-load_result(name, version = current_version()) = load(datapath(version, name * ".jld"))
-
-function load_results(version = current_version())
-    files = filter(readdir(datapath(version))) do x
-        endswith(x, ".jld")
-    end
-    Dict(map(files) do file
-        result = load(file)
-        name, ext = splitext(file)
-        name = basename(name)
-        name => result
-    end)
-end
-current_version() = v"0.0.1"
 """
 Runs a script in a new julia process.
 Usage:
@@ -89,7 +84,7 @@ end
 ```
 """
 macro run_julia(args, expr)
-    envs = []
+    envs = String[]
     julia_args = []
     variables = []
     if isa(args, Expr) && args.head == :tuple
@@ -98,7 +93,9 @@ macro run_julia(args, expr)
                 push!(julia_args, elem)
             elseif isa(elem, Expr) && elem.head == :(=)
                 key, value = elem.args
-                push!(envs, string(key) => value)
+                push!(envs, string(key, "=", value))
+            elseif isa(elem, Symbol)
+                push!(variables, elem)
             else
                 error("Unsupported argument: $elem")
             end
@@ -119,19 +116,35 @@ macro run_julia(args, expr)
     end
     expr.args = new_args
     str = string(expr)
-    command = `julia6 $(julia_args...) -e $str`
-    quote
-
-        withenv($(esc(envs...))) do
-            run($command)
+    command_1 = ["julia6", julia_args...]
+    variable_expr = map(variables) do var
+        quote
+            src_str *= sprint() do io
+                val = $(esc(var))
+                print(io, $(string(var)), " = ")
+                show(io, val)
+                println(io)
+            end
         end
     end
+    expr = quote
+        src_str = ""
+        $(variable_expr...)
+        src_str *= $(string(expr))
+        command_2 = Cmd([$(command_1)..., "-e", src_str])
+        command_3 = Cmd(command_2, env = $(envs))
+        run(command_3)
+    end
+    expr
 end
 
+include("database.jl")
 
-
-export devices, init, is_cudanative, free, synchronize, save_result, load_result, is_arrayfire, current_version, is_gpuarrays
-export @run_julia, datapath
+export devices, init, is_cudanative, free, synchronize, is_arrayfire, is_gpuarrays
+export @run_julia, BenchResult, meandifference
 
 
 end # module
+
+
+@which Sys.cpu_summary()

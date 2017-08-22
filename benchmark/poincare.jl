@@ -99,10 +99,6 @@ function poincare_inner{N}(rv, result, c, π, ::Val{N}, n)
     return
 end
 
-nrange() = map(x-> 10 ^ x, 3:1:9)
-is_device_supported(dev) = is_gpuarrays(dev) || dev == :julia_base
-types() = (Float32,)
-
 function poincare_inner(n, seeds::GPUArray, result, c, π, val::Val{N}) where N
     foreach(poincare_inner, seeds, result, c, Float32(pi), val, n)
 end
@@ -112,19 +108,49 @@ function poincare_inner(n, seeds::Array, result, c, π, val::Val{N}) where N
     end
 end
 
-function execute(N, T, device)
-    ctx, AT = init(device)
+
+function makeresult(bench, N, device, hardware, mdiff)
+    BenchResult(
+        "Poincare",
+        bench,
+        N,
+        Float32,
+        string(device),
+        hardware,
+        @__FILE__,
+        mdiff
+    )
+end
+
+function execute(device)
+    results = BenchResult[]
+    is_gpuarrays(device) || device == :julia_base || return results
+    hardware, AT = init(device)
     c = 1f0; divisor = 2^11
     srand(2)
-    ND = Cuint(1024)
-    result = AT(zeros(Float32, ND, ND))
-    _n = div(N, divisor)
-    seeds = AT([ntuple(i-> rand(Float32), Val{3}) for x in 1:divisor])
-    b = @benchmark begin
-        $(poincare_inner)($ND, $seeds, $(Base.RefValue(result)), $c, $(Float32(pi)), $(Val{_n}()))
-        synchronize($(result)) # synchronize for the benchmark
+    for i = 3:9
+        N = 10^i
+        ND = Cuint(1024)
+        result = AT(zeros(Float32, ND, ND))
+        _n = div(N, divisor)
+        seeds = AT([ntuple(i-> rand(Float32), Val{3}) for x in 1:divisor])
+        bench = @benchmark begin
+            $(poincare_inner)($ND, $seeds, $(Base.RefValue(result)), $c, $(Float32(pi)), $(Val{_n}()))
+            synchronize($(result)) # synchronize for the benchmark
+        end
+        jl_results = zeros(Float32, ND, ND)
+        result = AT(jl_results)
+        _n = div(N, divisor)
+        jl_seeds = [ntuple(i-> rand(Float32), Val{3}) for x in 1:divisor]
+        seeds = AT(jl_seeds)
+        poincare_inner(ND, seeds, Base.RefValue(result), c, Float32(pi), Val{_n}())
+        poincare_inner(ND, jl_seeds, Base.RefValue(jl_results), c, Float32(pi), Val{_n}())
+        mdiff = meandifference(jl_results, result)
+        @show mdiff
+        push!(results, makeresult(bench, N, device, hardware, mdiff))
     end
-    b
+    results
 end
+
 
 end
