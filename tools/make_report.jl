@@ -268,9 +268,7 @@ for code_path in codepaths
         end
         benchsets = [benchset_firstn, benchset_middle, benchset_lastn]
         legend_str = plot_legend(suitename, benchset_ns, benchsets, legend_colors, window_size)
-        println(md_io)
-        println(md_io, legend_str)
-        println(md_io)
+
         layout = @layout [
             a{0.5h}
             a{0.5w} a{0.5w}
@@ -286,6 +284,8 @@ for code_path in codepaths
 
         code_url = github_url(false, "benchmark", jl_name)
         println(md_io, "[![$suitename]($img_url)]($code_url)")
+        println(md_io)
+        println(md_io, legend_str)
         println(md_io)
         println(md_io, "[code]($code_url)")
         println(md_io)

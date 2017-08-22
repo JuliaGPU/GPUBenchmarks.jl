@@ -34,24 +34,22 @@ Image of the benchmarked juliaset:
 ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/juliaset_result.png?raw=true)
 
 #### Juliaset
+[![Juliaset](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/Juliaset.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/juliaset.jl/)
 
 | 2^12 | 2^16 | 2^24 |
 | --- | --- | --- |
 | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Juliaset1.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Juliaset2.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Juliaset3.png/?raw=true) |
-
-[![Juliaset](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/Juliaset.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/juliaset.jl/)
 
 [code](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/juliaset.jl/)
 
 ___
 
 #### Juliaset Unrolled
+[![Juliaset Unrolled](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/Juliaset%20Unrolled.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/juliaset.jl/)
 
 | 2^12 | 2^16 | 2^24 |
 | --- | --- | --- |
 | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Juliaset%20Unrolled1.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Juliaset%20Unrolled2.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Juliaset%20Unrolled3.png/?raw=true) |
-
-[![Juliaset Unrolled](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/Juliaset%20Unrolled.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/juliaset.jl/)
 
 [code](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/juliaset.jl/)
 
@@ -65,12 +63,11 @@ The CuArray package is a bit slower here compared to GPUArrays, which should be 
 I suspect that it's due to more promotions between integer types in the indexing code.
 
 #### Blackscholes
+[![Blackscholes](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/Blackscholes.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/blackscholes.jl/)
 
 | 10^1 | 10^3 | 10^7 |
 | --- | --- | --- |
 | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Blackscholes1.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Blackscholes2.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Blackscholes3.png/?raw=true) |
-
-[![Blackscholes](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/Blackscholes.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/blackscholes.jl/)
 
 [code](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/blackscholes.jl/)
 
@@ -84,12 +81,11 @@ Result of calculation:
 ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/poincare_result.png?raw=true)
 
 #### Poincare
+[![Poincare](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/Poincare.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/poincare.jl/)
 
 | 10^3 | 10^5 | 10^9 |
 | --- | --- | --- |
 | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Poincare1.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Poincare2.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/Poincare3.png/?raw=true) |
-
-[![Poincare](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/Poincare.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/poincare.jl/)
 
 [code](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/poincare.jl/)
 
@@ -105,12 +101,11 @@ Result of the benchmarked PDE:
 ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/pde_result.png?raw=true)
 
 #### PDE
+[![PDE](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/PDE.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/PDE.jl/)
 
 | 10^1 | 10^3 | 10^7 |
 | --- | --- | --- |
 | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/PDE1.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/PDE2.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/PDE3.png/?raw=true) |
-
-[![PDE](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/PDE.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/PDE.jl/)
 
 [code](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/PDE.jl/)
 
@@ -122,12 +117,11 @@ Interestingly, for the sum benchmark the arrayfire opencl backend is the fastest
 This means we should be able to remove the slowdown for GPUArrays + OpenCL and maybe also for all the CUDA backends.
 
 #### Sum
+[![sum](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/sum.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/mapreduce.jl/)
 
 | 10^1 | 10^3 | 10^7 |
 | --- | --- | --- |
 | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/sum1.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/sum2.png/?raw=true) | ![](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/speedups/sum3.png/?raw=true) |
-
-[![sum](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/sum.png/?raw=true)](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/mapreduce.jl/)
 
 [code](https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/benchmark/mapreduce.jl/)
 
