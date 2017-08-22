@@ -153,6 +153,26 @@ gr(size = window_size)
 
 md_io = open(GPUBenchmarks.dir("results", string("results.md")), "w")
 
+println(md_io, """
+# GPU Benchmarks
+
+This is the first iteration of Julia's GPU benchmark suite.
+Please treat all numbers with care and open issues if numbers seem off.
+If you have suggestions or improvements, please go ahead and open a PR with this repository.
+
+Packages benchmarked:
+[CuArrays](https://github.com/FluxML/CuArrays.jl) appears as: **cuarrays**
+[ArrayFire](https://github.com/gaika/ArrayFire.jl) appears as: **arrayfire cl**, **arrayfire cu**
+[GPUArrays](https://github.com/JuliaGPU/GPUArrays.jl) appears as: **opencl**, **cudanative** and **julia** for a multi threaded backend
+Julia Base Arrays appear as: **julia base**
+
+Hardware used for GPU: GTX 950
+Hardware used for Julia single and multithreaded backends: Intel® Core™ i7-6700 CPU @ 3.40GHz × 4
+
+---
+
+""")
+
 # most_current = filter(x-> x.timestamp == GPUBenchmarks.last_time_stamp(), GPUBenchmarks.get_database())
 most_current = GPUBenchmarks.get_database()
 using GPUBenchmarks: codepath, name
