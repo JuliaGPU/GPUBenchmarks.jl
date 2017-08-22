@@ -5,7 +5,11 @@ import CUDAnative
 
 const cu = CUDAnative
 description = """
-Poincare section of a chaotic neuronal network
+Poincare section of a chaotic neuronal network.
+The domination of OpenCL in this benchmark might be due to a better use of vector intrinsics in Transpiler.jl, but needs some
+more investigations.
+Result of calculation:
+![]("https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/poincare_result.png?raw=true")
 """
 
 # Original poincare implementation by https://github.com/RainerEngelken
@@ -151,6 +155,31 @@ function execute(device)
     end
     results
 end
+
+# using FileIO, Interpolations, Colors, GPUBenchmarks, GPUArrays, ColorVectorSpace, FixedPointNumbers
+# device = :opencl
+# hardware, AT = init(device)
+# N = 10^9
+# ND = Cuint(512)
+# result = AT(zeros(Float32, ND, ND))
+# divisor = 2^11
+# _n = div(N, divisor)
+# seeds = AT([ntuple(i-> rand(Float32), Val{3}) for x in 1:divisor])
+# _n = div(N, divisor)
+# c = 1f0
+# seeds = AT([ntuple(i-> rand(Float32), Val{3}) for x in 1:divisor])
+# poincare_inner(ND, seeds, Base.RefValue(result), c, Float32(pi), Val{_n}())
+# synchronize(result)
+# cn = 100
+# cmap = interpolate(colormap("Oranges", cn), BSpline(Linear()), OnCell());
+# img_color = map(Array(result)) do val
+#     val = val / 2000f0
+#     val = clamp(val, 0f0, 1f0);
+#     idx = (val * (cn - 1)) + 1.0
+#     RGB{N0f8}(cmap[idx])
+# end
+# #save as an image
+# save(GPUBenchmarks.dir("results", "plots", "poincare_result.png"), img_color)
 
 
 end

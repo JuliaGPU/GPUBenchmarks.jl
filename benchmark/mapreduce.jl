@@ -3,7 +3,9 @@ module Poincare
 using GPUBenchmarks, BenchmarkTools
 
 description = """
-Mapreduce, e.g. sum!
+Mapreduce, e.g. sum!.
+Interestingly, for the sum benchmark the arrayfire opencl backend is the fastest, while GPUArrays OpenCL backend is the slowest.
+This means we should be able to remove the slowdown for GPUArrays + OpenCL and maybe also for all the CUDA backends.
 """
 
 function makeresult(name, bench, N, device, hardware, mdiff)

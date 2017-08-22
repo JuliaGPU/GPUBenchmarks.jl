@@ -5,8 +5,12 @@ import CUDAnative, ArrayFire
 using ArrayFire: @afgc
 
 description = """
-julia set benchmark
-generated functions allow you to emit specialized code for the argument types.
+The Julia Set benchmark.
+The unrolled benchmark uses generated functions to emit an unrolled version of the inner loop.
+This currently doesn't yield a speed up, but was quite a bit faster in the initial tests.
+Needs some further research of why this slowed down - Potentially an N == 16 for the inner iteration is too big.
+Image of the benchmarked juliaset:
+![]("https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/juliaset_result.png?raw=true")
 """
 
 
@@ -115,5 +119,24 @@ function execute(device)
     return results
 end
 
+
+# using FileIO, Interpolations, Colors, GPUBenchmarks, GPUArrays, ColorVectorSpace, FixedPointNumbers
+# device = :opencl
+# hardware, array_type = init(device)
+# w, h = 512, 512
+# q = [Complex64(r, i) for i=1:-(2.0/w):-1, r=-1.5:(3.0/h):1.5]
+# q_gpu = array_type(q)
+# result_gpu = array_type(zeros(UInt8, size(q_gpu)))
+# result_gpu .= juliaset.(q_gpu, 50)
+# cn = 100
+# cmap = interpolate(colormap("Oranges", cn), BSpline(Linear()), OnCell());
+# img_color = map(Array(result_gpu)) do val
+#     val = val / 50.0
+#     val = 1 - clamp(val, 0f0, 1f0);
+#     idx = (val * (cn - 1)) + 1.0
+#     RGB{N0f8}(cmap[idx])
+# end
+# #save as an image
+# save(GPUBenchmarks.dir("results", "plots", "juliaset_result.png"), img_color)
 
 end

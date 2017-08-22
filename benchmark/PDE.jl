@@ -3,9 +3,13 @@ module PDE
 using GPUBenchmarks, BenchmarkTools, Primes
 
 description = """
+Kuramoto-Sivashinsky algorithm benchmark.
+[Original code](https://github.com/johnfgibson/julia-pde-benchmark/blob/master/1-Kuramoto-Sivashinksy-benchmark.ipynb)
 This benchmark is dominated by the cost of the FFT, leading to worse results for OpenCL with
 CLFFT compared to the faster CUFFT.
 Similarly the multithreaded backend doesn't improve much over base with the same FFT implementation.
+Result of the benchmarked PDE:
+![]("https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/results/plots/pde_result.png?raw=true")
 """
 
 
@@ -209,5 +213,66 @@ function execute(device)
     end
     results
 end
+
+
+function ksintegrateNaive(u, Lx, dt, Nt, nsave)
+    Nx = length(u)                  # number of gridpoints
+    x = collect(0:(Nx-1)/Nx)*Lx
+    kx = vcat(0:Nx/2-1, 0, -Nx/2+1:-1)  # integer wavenumbers: exp(2*pi*kx*x/L)
+    alpha = 2*pi*kx/Lx              # real wavenumbers:    exp(alpha*x)
+    D = 1im*alpha;                  # D = d/dx operator in Fourier space
+    L = alpha.^2 - alpha.^4         # linear operator -D^2 - D^4 in Fourier space
+    G = -0.5*D                      # -1/2 D operator in Fourier space
+
+    Nsave = div(Nt, nsave)+1        # number of saved time steps, including t=0
+    t = (0:Nsave)*(dt*nsave)        # t timesteps
+    U = zeros(Nsave, Nx)            # matrix of u(xⱼ, tᵢ) values
+    U[1,:] = u                      # assign initial condition to U
+    s = 2                           # counter for saved data
+
+    dt2  = dt/2
+    dt32 = 3*dt/2;
+    A_inv = (ones(Nx) - dt2*L).^(-1)
+    B     =  ones(Nx) + dt2*L
+
+    Nn  = G.*fft(u.*u) # -u u_x (spectral), notation Nn = N^n     = N(u(n dt))
+    Nn1 = copy(Nn)     #                   notation Nn1 = N^{n-1} = N(u((n-1) dt))
+    u  = fft(u)        # transform u to spectral
+
+    # timestepping loop
+    for n = 1:Nt
+        Nn1 = copy(Nn)                 # shift nonlinear term in time: N^{n-1} <- N^n
+        Nn  = G.*fft(real(ifft(u)).^2) # compute Nn = -u u_x
+
+        u = A_inv .* (B .* u + dt32*Nn - dt2*Nn1)
+
+        if mod(n, nsave) == 0
+            U[s,:] = real(ifft(u))
+            s += 1
+        end
+    end
+    t,U
+end
+#
+# using FileIO, Interpolations, Colors, GPUBenchmarks, GPUArrays, ColorVectorSpace, FixedPointNumbers
+# Lx = 64*pi
+# Nx = 1024
+# dt = 1/16
+# nsave = 8
+# Nt = 3200
+#
+# x = Lx*(0:Nx-1)/Nx
+# u = cos.(x) + 0.1*sin.(x/8) + 0.01*cos.((2*pi/Lx)*x);
+# t,U = ksintegrateNaive(u, Lx, dt, Nt, nsave)
+# cn = 100
+# cmap = interpolate(colormap("Oranges", cn), BSpline(Linear()), OnCell());
+# mini, maxi = extrema(U)
+# img_color = map(U) do val
+#     val = (val - mini) / (maxi - mini)
+#     val = 1 - clamp(val, 0f0, 1f0);
+#     idx = (val * (cn - 1)) + 1.0
+#     RGB{N0f8}(cmap[idx])
+# end
+# save(GPUBenchmarks.dir("results", "plots", "pde_result.png"), img_color)
 
 end
