@@ -136,11 +136,13 @@ function plot_legend(title, benchset, label_colors, size)
     p
 end
 function github_url(isimage, name...)
-    joinpath(
+    str = joinpath(
         "https://github.com/JuliaGPU/GPUBenchmarks.jl/blob/master/",
         name...,
         isimage ? "?raw=true" : ""
     )
+    # there is a better way to do this in HTTParser or so... keep forgetting where and how
+    replace(str, " ", "%20")
 end
 
 ##########################################
