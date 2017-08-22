@@ -3,8 +3,8 @@ module PDE
 using GPUBenchmarks, BenchmarkTools, Primes
 
 description = """
-Kuramoto-Sivashinsky algorithm benchmark.
-[Original code](https://github.com/johnfgibson/julia-pde-benchmark/blob/master/1-Kuramoto-Sivashinksy-benchmark.ipynb)
+Kuramoto-Sivashinsky algorithm benchmark ([original benchmark](https://github.com/johnfgibson/julia-pde-benchmark/blob/master/1-Kuramoto-Sivashinksy-benchmark.ipynb)).
+
 This benchmark is dominated by the cost of the FFT, leading to worse results for OpenCL with
 CLFFT compared to the faster CUFFT.
 Similarly the multithreaded backend doesn't improve much over base with the same FFT implementation.
