@@ -197,7 +197,7 @@ for suitename in suites
     pngpath = joinpath(plotbase, suitename * ".png")
     savefig(pngpath)
     println(pngpath)
-    img_url = github_url(true, split(pngpath, Base.Filesystem.path_separator)[end-3:end]...)
+    img_url = github_url(true, split(pngpath, Base.Filesystem.path_separator)[end-2:end]...)
     jl_name = basename(code_path)
     code_url = github_url(false, "benchmark", jl_name)
     println(md_io, "[![$suitename]($img_url)]($code_url)")
