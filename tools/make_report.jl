@@ -174,7 +174,9 @@ Hardware used for GPU: **GTX 950**
 
 Hardware used for Julia single and multithreaded backends: **Intel® Core™ i7-6700 CPU @ 3.40GHz × 4**
 
-The mean difference to the Julia baseline is plotted as points, with the size of difference corelating with point size.
+Julia's Array implementation is used as a baseline for performance and precision.
+So the baseline is in most cases the maximum single threaded performance with SIMD acceleration.
+The mean difference in the precision compared to the Julia baseline is plotted as points, with the size of difference corelating with point size.
 
 ---
 
