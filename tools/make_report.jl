@@ -146,9 +146,9 @@ function plot_samples(suite, baseline, devices, legend_colors)
     for n in Ns
         print(str, " N = ", get_log_n(n), " |")
     end
-    print(str, "\n|")
-    for i = 1:(length(Ns) + 1)
-        print(str, " --- |")
+    print(str, "\n| --- | ")
+    for i = 1:(length(Ns))
+        print(str, " :---: |")
     end
     for device in devices
         c = legend_colors[device]
