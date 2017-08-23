@@ -52,7 +52,24 @@ function judged_push!(benchset, benchmark, name)
     push!(benchset, [(name, benchmark)])
     return
 end
+function get_log_n(N)
+    # we should only use log10  or log2 for now!
+    isinteger(log10(N)) && return string("10^", Int(log10(N)))
+    ispow2(N) && return string("2^", Int(log2(N)))
+    string(N)
+end
 
+function prettytime(t)
+    if t < 1e3
+        1, "ns"
+    elseif t < 1e6
+        1e3, "μs"
+    elseif t < 1e9
+        1e6, "ms"
+    else
+        1e9, "s"
+    end
+end
 get_trial(x::BenchmarkTools.Trial) = x
 function get_trial(x)
     BenchmarkTools.Trial(
@@ -103,38 +120,32 @@ function plot_benchset(p, position, wstart, benchset, label_colors, speed_cmap)
     position
 end
 
-function plot_legend(name, benchsetsn, benchsets, label_colors, size)
-    pad = 5
-    width, height = size .* (0.3, 0.5)
-    wstart = width - pad
-    position = (wstart, 0)
+function plot_samples(suite, baseline, devices)
+    Nmax = maximum(unique(map(x-> x.N, suite)))
+    sort_dev(dev) = minimum(first(filter(x-> x.device == dev && x.N == Nmax, suite)).benchmark).time
+    devices = sort(devices, by = sort_dev)
+    max_time = maximum(map(x-> minimum(x.benchmark).time, suite))
+    divisor, unit = prettytime(max_time)
     str = IOBuffer()
-    print(str, "|")
-    for n in benchsetsn
-        print(str, " ", get_log_n(n), " |")
+    Ns = map(x-> x.N, baseline)
+    print(str, "| device |")
+    for n in Ns
+        print(str, " N = ", get_log_n(n), " |")
     end
     print(str, "\n|")
-    for n in benchsetsn
+    for i = 1:(length(Ns) + 1)
         print(str, " --- |")
     end
     print(str, "\n|")
-    for (i, (n, benchset)) in enumerate(zip(benchsetsn, benchsets))
-        p = plot(
-            xlims = (0, width), ylims = (0, height),
-            legend = false,
-            grid = false,
-            axis = false,
-            margin = 0,
-            bottom_margin = 0,
-            aspect_ratio = 1,
-            markerstrokewidth = 0,
-            size = (width, height)
-        )
-        speed_cmap = linspace(RGBA(colorant"#E53A15", 0.6), RGBA(colorant"#AAE500", 0.3), length(benchset))
-        plot_benchset(p, position, wstart, benchset, label_colors, speed_cmap)
-        path = ("results", "plots", "speedups",  string(name, i, ".png"))
-        savefig(GPUBenchmarks.dir(path...))
-        print(str, " ![](", github_url(true, path...), ") |")
+    for device in devices
+        print(str, " ", device, " |")
+        for n in Ns
+            bench = filter(x-> x.N == n && x.device == device, suite)[1].benchmark
+            basetime = minimum(filter(x-> x.N == n, baseline)[1].benchmark).time
+            t = minimum(bench).time
+            speedup = basetime / t
+            print(str, " `", t / divisor, " ", unit, "` `", speedup, "x` |")
+        end
     end
     String(take!(str))
 end
@@ -185,25 +196,7 @@ The mean difference in the precision compared to the Julia baseline is plotted a
 
 """)
 
-function get_log_n(N)
-    # we should only use log10  or log2 for now!
-    isinteger(log10(N)) && return string("10^", Int(log10(N)))
-    ispow2(N) && return string("2^", Int(log2(N)))
-    string(N)
-end
 
-function prettytime(t)
-    if t < 1e3
-        value, units = t, "ns"
-    elseif t < 1e6
-        value, units = t / 1e3, "\\mus"
-    elseif t < 1e9
-        value, units = t / 1e6, "ms"
-    else
-        value, units = t / 1e9, "s"
-    end
-    return string(@sprintf("%8.1f", round(value, 1)), units)
-end
 function device_label(device)
     # TODO rename devices in GPUArrays and GPUBenchmarks
     str = replace(string(device), "_", " ")
@@ -245,20 +238,13 @@ for code_path in codepaths
             markerstrokewidth = 0,
         );
         devices = unique(map(x-> x.device, suite))
-        benchset_firstn = []
-        benchset_middle = []
-        benchset_lastn = []
         baseline = sort(filter(x-> x.device == "julia_base", suite), by = (x)-> x.N)
         base_times, Ns = map(x-> x.benchmark, baseline), map(x-> x.N, baseline)
-        benchset_ns = [Ns[1], Ns[length(Ns) ÷ 2], Ns[end]]
         base_times = get_time.(base_times)
         for device in devices
             device_benches = sort(filter(x-> x.device == device, suite), by = (x)-> x.N)
             times, Ns = map(x-> x.benchmark, device_benches), map(x-> x.N, device_benches)
             meandiff = map(x-> x.meandiffrence, device_benches) .* 3000.0
-            judged_push!(benchset_firstn, first(times), device)
-            judged_push!(benchset_middle, times[length(times) ÷ 2], device)
-            judged_push!(benchset_lastn, last(times), device)
             times = base_times ./ get_time.(times)
             color = nice_colors[i]
             legend_colors[device] = color
@@ -266,8 +252,7 @@ for code_path in codepaths
             plot!(main_plot, Ns, times, line = (1, 0.4, color), m = (color, 5, stroke(0)), label = device_label(device))
             i += 1
         end
-        benchsets = [benchset_firstn, benchset_middle, benchset_lastn]
-        legend_str = plot_legend(suitename, benchset_ns, benchsets, legend_colors, window_size)
+        legend_str = plot_samples(suite, baseline, devices)
 
         layout = @layout [
             a{0.5h}
