@@ -128,6 +128,7 @@ function plot_samples(suite, baseline, devices)
     divisor, unit = prettytime(max_time)
     str = IOBuffer()
     Ns = map(x-> x.N, baseline)
+    Ns = Ns[1:2:length(Ns)]
     print(str, "| device |")
     for n in Ns
         print(str, " N = ", get_log_n(n), " |")
@@ -143,7 +144,7 @@ function plot_samples(suite, baseline, devices)
             basetime = minimum(filter(x-> x.N == n, baseline)[1].benchmark).time
             t = minimum(bench).time
             speedup = basetime / t
-            print(str, " `", round(t / divisor, 1), " ", unit, "` `", round(speedup, 1), "x` |")
+            print(str, " `", round(t / divisor, 2), " ", unit, "` `", round(speedup, 1), "x` |")
         end
     end
     String(take!(str))
