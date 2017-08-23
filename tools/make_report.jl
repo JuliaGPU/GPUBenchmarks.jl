@@ -30,7 +30,10 @@ nice_colors = map([
 ]) do x
     RGB(map(v-> v / 255, x)...)
 end
-nice_colors = parse.(Colorant, ["#a6cee3","#b2df8a","#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#1f78b4"])
+nice_colors_hash = ["#a6cee3","#b2df8a","#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#1f78b4"]
+nice_colors = parse.(Colorant, nice_colors_hash)
+
+
 #######################
 # helpers
 
@@ -130,7 +133,7 @@ function plot_benchset(p, position, wstart, benchset, label_colors, speed_cmap)
     position
 end
 
-function plot_samples(suite, baseline, devices)
+function plot_samples(suite, baseline, devices, legend_colors)
     Nmax = maximum(unique(map(x-> x.N, suite)))
     sort_dev(dev) = minimum(first(filter(x-> x.device == dev && x.N == Nmax, suite)).benchmark).time
     devices = sort(devices, by = sort_dev)
@@ -148,7 +151,10 @@ function plot_samples(suite, baseline, devices)
         print(str, " --- |")
     end
     for device in devices
-        print(str, "\n| ", device_label(device), " | ")
+        c = legend_colors[device]
+        colorhex = bytes2hex(reinterpret(UInt8, [c.r, c.g, c.b]))
+        label = device_label(device)
+        print(str, "\n| ", "![$label](https://placehold.it/15/$(colorhex)/000000?text=+) ", label, " | ")
         for n in Ns
             bench = filter(x-> x.N == n && x.device == device, suite)[1].benchmark
             basetime = minimum(filter(x-> x.N == n, baseline)[1].benchmark).time
@@ -262,7 +268,7 @@ for code_path in codepaths
             plot!(main_plot, Ns, times, line = (1, 0.4, color), m = (color, 5, stroke(0)), label = device_label(device))
             i += 1
         end
-        legend_str = plot_samples(suite, baseline, devices)
+        legend_str = plot_samples(suite, baseline, devices, legend_colors)
 
         layout = @layout [
             a{0.5h}
