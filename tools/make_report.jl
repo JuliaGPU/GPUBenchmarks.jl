@@ -70,6 +70,16 @@ function prettytime(t)
         1e9, "s"
     end
 end
+function smart_round(t)
+    if t < 0.0001
+        round(t, 9)
+    elseif t < 0.1
+        round(t, 4)
+    else
+        round(t, 1)
+    end
+end
+
 get_trial(x::BenchmarkTools.Trial) = x
 function get_trial(x)
     BenchmarkTools.Trial(
@@ -144,7 +154,7 @@ function plot_samples(suite, baseline, devices)
             basetime = minimum(filter(x-> x.N == n, baseline)[1].benchmark).time
             t = minimum(bench).time
             speedup = basetime / t
-            print(str, " `", round(t / divisor, 2), " ", unit, "` `", round(speedup, 2), "x` |")
+            print(str, " `", smart_round(t / divisor), " ", unit, "` `", smart_round(speedup), "x` |")
         end
     end
     String(take!(str))
