@@ -144,7 +144,7 @@ function plot_samples(suite, baseline, devices)
             basetime = minimum(filter(x-> x.N == n, baseline)[1].benchmark).time
             t = minimum(bench).time
             speedup = basetime / t
-            print(str, " `", round(t / divisor, 2), " ", unit, "` `", round(speedup, 1), "x` |")
+            print(str, " `", round(t / divisor, 2), " ", unit, "` `", round(speedup, 2), "x` |")
         end
     end
     String(take!(str))
