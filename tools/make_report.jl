@@ -1,4 +1,4 @@
-using GPUBenchmarks, Plots, Colors, BenchmarkTools
+using GPUBenchmarks, Plots, Colors, BenchmarkTools, UnicodeFun
 
 #########################
 # Parameters
@@ -54,8 +54,8 @@ function judged_push!(benchset, benchmark, name)
 end
 function get_log_n(N)
     # we should only use log10  or log2 for now!
-    isinteger(log10(N)) && return string("10^", Int(log10(N)))
-    ispow2(N) && return string("2^", Int(log2(N)))
+    isinteger(log10(N)) && return string("10", to_superscript(Int(log10(N))))
+    ispow2(N) && return string("2", to_superscript(Int(log2(N))))
     string(N)
 end
 
@@ -136,15 +136,14 @@ function plot_samples(suite, baseline, devices)
     for i = 1:(length(Ns) + 1)
         print(str, " --- |")
     end
-    print(str, "\n|")
     for device in devices
-        print(str, " ", device, " |")
+        print(str, "\n| "device, " | ")
         for n in Ns
             bench = filter(x-> x.N == n && x.device == device, suite)[1].benchmark
             basetime = minimum(filter(x-> x.N == n, baseline)[1].benchmark).time
             t = minimum(bench).time
             speedup = basetime / t
-            print(str, " `", t / divisor, " ", unit, "` `", speedup, "x` |")
+            print(str, " `", round(t / divisor, 1), " ", unit, "` `", round(speedup, 1), "x` |")
         end
     end
     String(take!(str))
