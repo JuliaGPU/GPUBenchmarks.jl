@@ -138,7 +138,7 @@ function plot_samples(suite, baseline, devices)
         print(str, " --- |")
     end
     for device in devices
-        print(str, "\n| "device, " | ")
+        print(str, "\n| ", device_label(device), " | ")
         for n in Ns
             bench = filter(x-> x.N == n && x.device == device, suite)[1].benchmark
             basetime = minimum(filter(x-> x.N == n, baseline)[1].benchmark).time
@@ -180,7 +180,7 @@ Packages benchmarked:
 
 [ArrayFire](https://github.com/gaika/ArrayFire.jl) appears as: **arrayfire cl**, **arrayfire cu**
 
-[GPUArrays](https://github.com/JuliaGPU/GPUArrays.jl) appears as: **opencl**, **cudanative** and **julia** for a multi threaded backend
+[GPUArrays](https://github.com/JuliaGPU/GPUArrays.jl) appears as: **gpuarrays cl**, **gpuarrays cudanative** and **gpuarrays threaded**
 
 Julia Base Arrays appear as: **julia base**
 
