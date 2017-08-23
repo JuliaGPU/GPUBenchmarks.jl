@@ -141,7 +141,7 @@ function plot_samples(suite, baseline, devices, legend_colors)
     divisor, unit = prettytime(max_time)
     str = IOBuffer()
     Ns = map(x-> x.N, baseline)
-    Ns = Ns[1:2:length(Ns)]
+    Ns = [Ns[1], Ns[end]]
     print(str, "| device |")
     for n in Ns
         print(str, " N = ", get_log_n(n), " |")
