@@ -128,7 +128,6 @@ end
 
 function execute(device)
     results = BenchResult[]
-    is_gpuarrays(device) || device == :julia_base || return results
     hardware, AT = init(device)
     c = 1f0; divisor = 2^11
     srand(2)

@@ -1,10 +1,10 @@
 module GPUBenchmarks
 
 using GPUArrays, CUDAdrv, FileIO, BenchmarkTools
-import CuArrays, ArrayFire, CUDAnative, CUDAdrv, OpenCL
+import CuArrays, CLArrays, ArrayFire, CUDAnative, CUDAdrv, OpenCL
 
 function devices()
-    (GPUArrays.supported_backends()..., :cuarrays, :arrayfire_cl, :arrayfire_cu, :julia_base)
+    (CLArrays.devices()...,)
 end
 
 function normit(x, mini, maxi)
@@ -20,33 +20,38 @@ function meandifference(juliabaseline, gpuarray)
     mean(abs.(normed1 .- normed2))
 end
 
-function init(device)
-    if device == :cuarrays
-        # cuarrays uses the default device 0
-        CUDAdrv.name(CUDAnative.CuDevice(0)), CuArrays.CuArray
-    elseif device == :julia_base
-        FFTW.set_num_threads(1)
-        Sys.cpu_info()[1].model, Array
-    elseif device == :arrayfire_cl
-        ArrayFire.set_backend(ArrayFire.AF_BACKEND_OPENCL)
-        gpu_devices = first(OpenCL.cl.devices(:gpu))
-        replace(gpu_devices[:name], r"\s+", " "), ArrayFire.AFArray
-    elseif device == :arrayfire_cu
-        ArrayFire.set_backend(ArrayFire.AF_BACKEND_CUDA)
-        CUDAdrv.name(CUDAnative.CuDevice(ArrayFire.get_device())), ArrayFire.AFArray
-    else
-        ctx = GPUArrays.init(device)
-        hardware = if device == :cudanative
-            CUDAdrv.name(ctx.device)
-        elseif device == :opencl
-            replace(ctx.device[:name], r"\s+", " ")
-        elseif device == :julia
-            FFTW.set_num_threads(8)
-            Sys.cpu_info()[1].model
-        end
-        hardware, GPUArray
-    end
+function init(device::OpenCL.cl.Device)
+    CLArrays.init(device)
+    GPUArrays.name(device), CLArrays.CLArray
 end
+
+# function init(device)
+#     if device == :cuarrays
+#         # cuarrays uses the default device 0
+#         CUDAdrv.name(CUDAnative.CuDevice(0)), CuArrays.CuArray
+#     elseif device == :julia_base
+#         FFTW.set_num_threads(1)
+#         Sys.cpu_info()[1].model, Array
+#     elseif device == :arrayfire_cl
+#         ArrayFire.set_backend(ArrayFire.AF_BACKEND_OPENCL)
+#         gpu_devices = first(OpenCL.cl.devices(:gpu))
+#         replace(gpu_devices[:name], r"\s+", " "), ArrayFire.AFArray
+#     elseif device == :arrayfire_cu
+#         ArrayFire.set_backend(ArrayFire.AF_BACKEND_CUDA)
+#         CUDAdrv.name(CUDAnative.CuDevice(ArrayFire.get_device())), ArrayFire.AFArray
+#     else
+#         ctx = GPUArrays.init(device)
+#         hardware = if device == :cudanative
+#             CUDAdrv.name(ctx.device)
+#         elseif device == :opencl
+#             replace(ctx.device[:name], r"\s+", " ")
+#         elseif device == :julia
+#             FFTW.set_num_threads(8)
+#             Sys.cpu_info()[1].model
+#         end
+#         hardware, GPUArray
+#     end
+# end
 
 is_cudanative(x) = x in (:cudanative, :cuarrays)
 is_arrayfire(x) = x in (:arrayfire_cl, :arrayfire_cu)
@@ -67,9 +72,6 @@ function synchronize(x::ArrayFire.AFArray)
 end
 
 free(x) = finalize(x)
-# Maybe GPUArrays should stop using free and use finalize instead ........
-free(x::GPUArray) = GPUArrays.free(x)
-
 
 dir(paths...) = normpath(joinpath(@__DIR__, "..", paths...))
 
@@ -145,6 +147,3 @@ export @run_julia, BenchResult, meandifference
 
 
 end # module
-
-
-@which Sys.cpu_summary()
