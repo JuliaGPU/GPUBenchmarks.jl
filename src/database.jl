@@ -31,6 +31,43 @@ immutable BenchResult
     timestamp::DateTime
 end
 
+function Base.show(io::IO, b::BenchResult)
+    println(io, "BenchResult:")
+    println(io, "    ", b.name)
+    print(io, "    ")
+    show(io, b.benchmark)
+    println(io)
+    println(io, "    device: ", b.device)
+    println(io, "    hardware: ", b.hardware)
+    println(io, "    meandiff: ", b.meandiffrence)
+    println(io, "    time: ", b.timestamp)
+end
+
+
+function BenchResult(
+        x::BenchResult;
+        name = x.name,
+        benchmark = x.benchmark,
+        N = x.N,
+        typ = x.typ,
+        device = x.device,
+        hardware = x.hardware,
+        codepath = x.codepath,
+        meandiffrence = x.meandiffrence
+    )
+    BenchResult(
+        name,
+        benchmark,
+        N,
+        typ,
+        device,
+        hardware,
+        codepath,
+        meandiffrence
+    )
+end
+
+
 function BenchResult(
         name::String,
         benchmark::BenchmarkTools.Trial,
