@@ -1,10 +1,10 @@
 module GPUBenchmarks
 
 using GPUArrays, CUDAdrv, FileIO, BenchmarkTools
-import CuArrays, ArrayFire, CUDAnative, CUDAdrv, OpenCL
+import CuArrays, CLArrays, CUDAnative, CUDAdrv, OpenCL
 
 function devices()
-    (GPUArrays.supported_backends()..., :cuarrays, :arrayfire_cl, :arrayfire_cu, :julia_base)
+    (:cuarrays, :clarrays_cpu, :clarrays_gpu, :juliabase, #=:clarrayfire, :cuarrayfire=#)
 end
 
 function normit(x, mini, maxi)
@@ -20,37 +20,39 @@ function meandifference(juliabaseline, gpuarray)
     mean(abs.(normed1 .- normed2))
 end
 
-function init(device)
+function init(device::OpenCL.cl.Device)
+    CLArrays.init(device)
+    GPUArrays.name(device), CLArrays.CLArray
+end
+
+function init(device::Symbol)
     if device == :cuarrays
         # cuarrays uses the default device 0
         CUDAdrv.name(CUDAnative.CuDevice(0)), CuArrays.CuArray
-    elseif device == :julia_base
+    elseif device == :juliabase
         FFTW.set_num_threads(1)
         Sys.cpu_info()[1].model, Array
-    elseif device == :arrayfire_cl
+    elseif device == :clarrayfire
         ArrayFire.set_backend(ArrayFire.AF_BACKEND_OPENCL)
         gpu_devices = first(OpenCL.cl.devices(:gpu))
         replace(gpu_devices[:name], r"\s+", " "), ArrayFire.AFArray
-    elseif device == :arrayfire_cu
+    elseif device == :cuarrayfire
         ArrayFire.set_backend(ArrayFire.AF_BACKEND_CUDA)
         CUDAdrv.name(CUDAnative.CuDevice(ArrayFire.get_device())), ArrayFire.AFArray
-    else
-        ctx = GPUArrays.init(device)
-        hardware = if device == :cudanative
-            CUDAdrv.name(ctx.device)
-        elseif device == :opencl
-            replace(ctx.device[:name], r"\s+", " ")
-        elseif device == :julia
-            FFTW.set_num_threads(8)
-            Sys.cpu_info()[1].model
-        end
-        hardware, GPUArray
+    elseif device == :clarrays_cpu
+        device = first(CLArrays.devices(CLArrays.is_cpu))
+        ctx = CLArrays.init(device)
+        GPUArrays.name(device), CLArrays.CLArray
+    elseif device == :clarrays_gpu
+        device = first(CLArrays.devices(CLArrays.is_gpu))
+        ctx = CLArrays.init(device)
+        GPUArrays.name(device), CLArrays.CLArray
     end
 end
 
-is_cudanative(x) = x in (:cudanative, :cuarrays)
-is_arrayfire(x) = x in (:arrayfire_cl, :arrayfire_cu)
-is_gpuarrays(x) = x in (:opencl, :cudanative, :julia)
+is_cudanative(x) = x == :cuarrays
+is_arrayfire(x) = x in (:clarrayfire, :cuarrayfire)
+is_gpuarrays(x) = x in (:clarrays_cpu, :cuarrays, :clarrays_gpu)
 
 synchronize(x) = GPUArrays.synchronize(x)
 
@@ -60,16 +62,13 @@ function synchronize(x::CuArrays.CuArray)
     x
 end
 
-function synchronize(x::ArrayFire.AFArray)
-    ArrayFire.afgc()
-    ArrayFire.sync(x)
-    return x
-end
+# function synchronize(x::ArrayFire.AFArray)
+#     ArrayFire.afgc()
+#     ArrayFire.sync(x)
+#     return x
+# end
 
 free(x) = finalize(x)
-# Maybe GPUArrays should stop using free and use finalize instead ........
-free(x::GPUArray) = GPUArrays.free(x)
-
 
 dir(paths...) = normpath(joinpath(@__DIR__, "..", paths...))
 
@@ -116,7 +115,7 @@ macro run_julia(args, expr)
     end
     expr.args = new_args
     str = string(expr)
-    command_1 = ["julia6", julia_args...]
+    command_1 = ["julia", julia_args...]
     variable_expr = map(variables) do var
         quote
             src_str *= sprint() do io
@@ -145,6 +144,3 @@ export @run_julia, BenchResult, meandifference
 
 
 end # module
-
-
-@which Sys.cpu_summary()

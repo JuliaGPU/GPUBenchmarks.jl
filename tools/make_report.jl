@@ -186,17 +186,14 @@ md_io = open(GPUBenchmarks.dir("results", string("results.md")), "w")
 println(md_io, """
 # GPU Benchmarks
 
-This is the first iteration of Julia's GPU benchmark suite.
-Please treat all numbers with care and open issues if numbers seem off.
-If you have suggestions or improvements, please go ahead and open a PR with this repository.
-
 Packages benchmarked:
 
 [CuArrays](https://github.com/FluxML/CuArrays.jl) appears as: **cuarrays**
 
+[GPUArrays](https://github.com/JuliaGPU/CLArrays.jl) appears as: **clarrays**
+
 [ArrayFire](https://github.com/gaika/ArrayFire.jl) appears as: **arrayfire cl**, **arrayfire cu**
 
-[GPUArrays](https://github.com/JuliaGPU/GPUArrays.jl) appears as: **gpuarrays cl**, **gpuarrays cudanative** and **gpuarrays threaded**
 
 Julia Base Arrays appear as: **julia base**
 
@@ -226,13 +223,51 @@ function device_label(device)
         str
     end
 end
+db = GPUBenchmarks.get_database()
 
+most_current = filter(x-> x.timestamp == GPUBenchmarks.last_time_stamp(), GPUBenchmarks.get_database())
 
-# most_current = filter(x-> x.timestamp == GPUBenchmarks.last_time_stamp(), GPUBenchmarks.get_database())
-most_current = GPUBenchmarks.get_database()
+names = unique(GPUBenchmarks.device.(most_current))
+prevts = sort(unique(GPUBenchmarks.timestamp.(db)))[1]
+
+prevbs = filter(x-> x.timestamp == prevts, db)
+namesprev = unique(GPUBenchmarks.device.(prevbs))
+to_merge_names = namesprev[[1, 4, 6, 7]]
+benchprev = filter(x-> x.device in to_merge_names, prevbs)
+cu_pde = filter(x-> x.device == "cudanative" && x.name == "PDE", prevbs)
+
+most_current = vcat(cu_pde, benchprev, most_current)
 using GPUBenchmarks: codepath, name
+
+most_current = map(most_current) do bench
+    if bench.device == "cudanative"
+        return BenchResult(bench, device = "cuarrays")
+    else
+        bench
+    end
+end
+
 codepaths = unique(codepath.(most_current))
+
+for elem in most_current
+    t = get_time(elem.benchmark)
+    if length(t) == 14
+        println(elem)
+    end
+end
+
+xx = filter(x-> x.device == "clarrays_gpu" && x.name == "Juliaset", most_current)
+new_most_current = filter(x-> !(x.device == "clarrays_gpu" && x.name == "Juliaset"), most_current)
+
+
+newxx = BenchResult[]
+for N in ns
+    push!(newxx, first(filter(x-> x.N == N, xx)))
+end
+most_current  = vcat(newxx, new_most_current)
+
 for code_path in codepaths
+    println(code_path)
     suites = unique(name.(filter(x-> codepath(x) == code_path, most_current)))
     mod = include(code_path)
     jl_name = basename(code_path)
@@ -258,9 +293,15 @@ for code_path in codepaths
         base_times, Ns = map(x-> x.benchmark, baseline), map(x-> x.N, baseline)
         base_times = get_time.(base_times)
         for device in devices
+            println(device, " ", suitename)
             device_benches = sort(filter(x-> x.device == device, suite), by = (x)-> x.N)
+            if length(device_benches) == 14
+                device_benches = device_benches[1:2:length(device_benches)]
+            end
             times, Ns = map(x-> x.benchmark, device_benches), map(x-> x.N, device_benches)
             meandiff = map(x-> x.meandiffrence, device_benches) .* 3000.0
+
+            println(">", length(times))
             times = base_times ./ get_time.(times)
             color = nice_colors[i]
             legend_colors[device] = color

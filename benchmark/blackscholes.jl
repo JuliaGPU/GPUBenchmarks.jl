@@ -1,6 +1,6 @@
 module Blackscholes
 
-using GPUBenchmarks, ArrayFire, BenchmarkTools
+using GPUBenchmarks, BenchmarkTools
 import CUDAdrv
 
 using CUDAnative
@@ -34,7 +34,7 @@ function blackscholes(
     put  = call_ - futureValue + sptprice
     return put
 end
-@afgc function blackscholes_af(
+function blackscholes_af(
         sptprice,
         strike,
         rate,
@@ -83,7 +83,7 @@ function execute_broadcast(f, res, a, b, c, d, e)
     synchronize(res)
 end
 
-@afgc function execute_broadcast_af(f, res, a, b, c, d, e)
+function execute_broadcast_af(f, res, a, b, c, d, e)
     res .= f.(a, b, c, d, e)
     synchronize(res)
 end
@@ -130,7 +130,7 @@ function execute(device)
             free(elem)
             println("freeing element: ", CUDAdrv.Mem.used() / 10^7)
         end
-        afgc();gc()
+        gc()
     end
     return results
 end

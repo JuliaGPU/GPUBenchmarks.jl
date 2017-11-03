@@ -1,8 +1,7 @@
 module JuliaSetUnrolled
 
 using GPUBenchmarks, BenchmarkTools
-import CUDAnative, ArrayFire
-using ArrayFire: @afgc
+import CUDAnative
 
 description = """
 The Julia Set benchmark.
@@ -24,7 +23,7 @@ function juliaset(z0, maxiter)
     return UInt8(maxiter)
 end
 
-@afgc function juliaset_af(z0, count, maxiter)
+function juliaset_af(z0, count, maxiter)
     fill!(count, 0)
     z = z0
     c = Complex64(-0.5, 0.75)
