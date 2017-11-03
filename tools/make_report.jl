@@ -267,6 +267,7 @@ end
 most_current  = vcat(newxx, new_most_current)
 
 for code_path in codepaths
+    println(code_path)
     suites = unique(name.(filter(x-> codepath(x) == code_path, most_current)))
     mod = include(code_path)
     jl_name = basename(code_path)
