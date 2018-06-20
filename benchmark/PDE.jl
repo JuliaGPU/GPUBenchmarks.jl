@@ -168,7 +168,7 @@ end
 function execute(device)
     hardware, AT = init(device)
     results = BenchResult[]
-    is_gpuarrays(device) || device == :julia_base || return results
+    is_gpuarrays(device) || device == :juliabase || return results
     T = Float32
     for i = 1:7
         N = 10^i

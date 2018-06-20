@@ -1,8 +1,8 @@
 using GPUBenchmarks, BenchmarkTools, FileIO
 
 benchmark_files = [
-    "blackscholes",
-    "PDE",
+   # "blackscholes",
+    #"PDE",
     "poincare",
     "juliaset",
     "mapreduce"
