@@ -62,8 +62,8 @@ ___
 
 ### Blackscholes
 Blackschole is a nice benchmark for broadcasting performance.
-It's a medium heavy calculation per array element, where the calculation is completely
-independant from each other.
+It's a medium heavy calculation per array element, where the calculations are completely
+independent from each other.
 The CuArray package is a bit slower here compared to GPUArrays, which should be straightforward to fix.
 I suspect that it's due to more promotions between integer types in the indexing code.
 
